@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+
+    <!-- dotnet tool configuration -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>sqlxl</ToolCommandName>
+    <PackageId>SqlXl</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Chris Hamilton</Authors>
+    <Description>A lightweight CLI tool for SQL Server data professionals to efficiently move data between SQL Server and Excel using SlappFramework infrastructure.</Description>
+    <PackageTags>sql;excel;cli;dotnet-tool;sqlserver</PackageTags>
+  </PropertyGroup>
+
+</Project>
