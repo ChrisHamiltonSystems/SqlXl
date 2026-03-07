@@ -68,22 +68,6 @@ public class DataService
         }//end using 
     }//end method
 
-    public List<MenuItem> GetMenuItems()
-    {
-        using (var connection = new SqlConnection(_connectionString))
-        {
-            connection.Open();
-
-            // Execute the stored procedure and map results to List<MenuItem>
-            var menuItems = connection.Query<MenuItem>(
-                "[ZZ_SlappFramework].[GetMenuItems]",
-                commandType: CommandType.StoredProcedure
-            );
-
-            return menuItems.AsList();
-        }//end using 
-    }//end method
-
     public string CallValidateThenRunSelectQuerySproc(string query)
     {
         string jsonResult = null;

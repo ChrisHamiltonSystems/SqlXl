@@ -23,5 +23,5 @@ public class BulkOpFeature
 
     public int MenuDisplayRanking { get; set; }
 
-    // Note: RequiresCtxVar001-012 flags may exist in DB but omitted from model for now
+    // Note: RequiresCtxVar001-012 flags may exist in DB but omitted from model for now <<ToDo what is this?
 }//end class

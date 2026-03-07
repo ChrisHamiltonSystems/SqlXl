@@ -10,9 +10,9 @@ app.Configure(config =>
 {
     config.SetApplicationName("sqlxl");
     config.AddCommand<ExportCommand>("export")
-        .WithDescription("Export data to an Excel template from a BulkOpFeature");
+        .WithDescription("Get Excel template starting point file for a BulkOpFeature");
     config.AddCommand<ImportCommand>("import")
-        .WithDescription("Import Excel data to SQL Server via a BulkOpFeature");
+        .WithDescription("Import Excel template file (with data) to SQL Server via a BulkOpFeature");
 });
 
 return app.Run(args);
