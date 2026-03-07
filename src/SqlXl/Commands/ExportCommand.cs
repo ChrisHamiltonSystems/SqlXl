@@ -1,99 +1,98 @@
-using System.CommandLine;
+using System.ComponentModel;
 using System.Data;
-using SqlXl.Core;
 using Microsoft.Extensions.Caching.Memory;
+using Spectre.Console;
+using Spectre.Console.Cli;
+using SqlXl.Core;
+using SqlXl.Models;
 
 namespace SqlXl.Commands;
 
-public static class ExportCommand
+public class ExportCommand : Command<ExportCommand.Settings>
 {
-    public static Command Create()
+    public class Settings : CommandSettings
     {
-        var command = new Command("export", "Export data to Excel template from a BulkOpFeature");
+        [CommandOption("--feature <ID>")]
+        [Description("BulkOpFeature ID from ZZ_SlappFramework.BulkOpFeatures")]
+        public int? FeatureId { get; set; }
 
-        // Options
-        var featureOption = new Option<int>(
-            name: "--feature",
-            description: "BulkOpFeature ID from ZZ_SlappFramework.BulkOpFeatures")
+        [CommandOption("--output <FILE>")]
+        [Description("Output Excel file path (e.g., products.xlsx)")]
+        public string OutputPath { get; set; } = string.Empty;
+
+        [CommandOption("--ids <IDS>")]
+        [Description("Comma-separated primary key IDs to populate (for UPDATE features)")]
+        public string SelectedIds { get; set; } = string.Empty;
+
+        [CommandOption("--connection <CONNSTR>")]
+        [Description("SQL Server connection string")]
+        public string ConnectionString { get; set; } = "Data Source=localhost;Database=TestDatabase001;Integrated Security=true;TrustServerCertificate=true;";
+
+        public override ValidationResult Validate()
         {
-            IsRequired = true
-        };
-
-        var outputOption = new Option<string>(
-            name: "--output",
-            description: "Output Excel file path (e.g., products.xlsx)")
-        {
-            IsRequired = true
-        };
-
-        var queryOption = new Option<string?>(
-            name: "--query",
-            description: "Optional SQL SELECT query to populate data (for UPDATE features)",
-            getDefaultValue: () => null);
-
-        var connectionOption = new Option<string>(
-            name: "--connection",
-            description: "SQL Server connection string",
-            getDefaultValue: () => "Data Source=localhost;Database=TestDatabase001;Integrated Security=true;TrustServerCertificate=true;");
-
-        command.AddOption(featureOption);
-        command.AddOption(outputOption);
-        command.AddOption(queryOption);
-        command.AddOption(connectionOption);
-
-        command.SetHandler(async (int featureId, string outputPath, string? query, string connectionString) =>
-        {
-            await ExecuteExport(featureId, outputPath, query, connectionString);
-        }, featureOption, outputOption, queryOption, connectionOption);
-
-        return command;
+            if (FeatureId == null)
+                return ValidationResult.Error("--feature is required");
+            if (string.IsNullOrWhiteSpace(OutputPath))
+                return ValidationResult.Error("--output is required");
+            return ValidationResult.Success();
+        }
     }
 
-    private static async Task ExecuteExport(int featureId, string outputPath, string? customQuery, string connectionString)
+    public override int Execute(CommandContext context, Settings settings)
     {
+        AnsiConsole.MarkupLine($"Exporting data for Feature ID [yellow]{settings.FeatureId}[/]...");
+        AnsiConsole.WriteLine();
+
         try
         {
-            Console.WriteLine($"🔄 Exporting data for Feature ID {featureId}...");
-            Console.WriteLine($"Connection: {connectionString}");
-            Console.WriteLine($"Output: {outputPath}");
-            Console.WriteLine();
-
-            // Create DataService
             var cache = new MemoryCache(new MemoryCacheOptions());
-            var dataService = new DataService(connectionString, cache);
+            var dataService = new DataService(settings.ConnectionString, cache);
 
-            // Get the BulkOpFeature metadata
-            var feature = await dataService.GetBulkOpFeatureByIdAsync(featureId);
+            BulkOpFeature feature = null;
+            AnsiConsole.Status().Start("Fetching feature metadata...", ctx =>
+            {
+                feature = dataService.GetBulkOpFeature(settings.FeatureId!.Value);
+            });
+
             if (feature == null)
             {
-                Console.WriteLine($"❌ Error: BulkOpFeature with ID {featureId} not found.");
-                return;
+                AnsiConsole.MarkupLine($"[red]Error:[/] BulkOpFeature with ID {settings.FeatureId} not found.");
+                return 1;
             }
 
-            Console.WriteLine($"Feature: {feature.UserFriendlyFeatureName}");
-            Console.WriteLine($"Type: {feature.InsertUpdateDeleteOrCustom}");
-            Console.WriteLine($"Table: {feature.DomainSchemaName}.{feature.DomainTableName}");
-            Console.WriteLine();
+            AnsiConsole.MarkupLine($"Feature:  [cyan]{Markup.Escape(feature.UserFriendlyFeatureName)}[/]");
+            AnsiConsole.MarkupLine($"Type:     [cyan]{Markup.Escape(feature.InsertUpdateDeleteOrCustom)}[/]");
+            AnsiConsole.MarkupLine($"Table:    [cyan]{Markup.Escape(feature.DomainSchemaName)}.{Markup.Escape(feature.DomainTableName)}[/]");
+            AnsiConsole.WriteLine();
 
-            // Get template data (schema + FK dropdowns + metadata)
-            DataSet templateData = await dataService.GetExcelTemplateDataAsync(featureId, customQuery);
+            DataSet templateData = null;
+            AnsiConsole.Status().Start("Fetching template data from SQL Server...", ctx =>
+            {
+                string selectedIds = string.IsNullOrWhiteSpace(settings.SelectedIds) ? null : settings.SelectedIds;
+                templateData = dataService.CallGetExcelTemplateDataSproc(settings.FeatureId!.Value, selectedIds);
+            });
 
-            // Generate Excel file
-            var generator = new ExcelTemplateGenerator();
-            byte[] excelBytes = generator.GenerateExcelTemplate(templateData);
+            byte[] excelBytes = null;
+            AnsiConsole.Status().Start("Generating Excel file...", ctx =>
+            {
+                var generator = new ExcelTemplateGenerator();
+                excelBytes = generator.GenerateExcelTemplate(templateData);
+            });
 
-            // Write to file
-            await File.WriteAllBytesAsync(outputPath, excelBytes);
+            File.WriteAllBytes(settings.OutputPath, excelBytes);
 
-            Console.WriteLine($"✅ Excel file generated successfully!");
-            Console.WriteLine($"📁 File: {Path.GetFullPath(outputPath)}");
-            Console.WriteLine($"📊 Rows: {templateData.Tables[0].Rows.Count}");
-            Console.WriteLine($"📋 Columns: {templateData.Tables[0].Columns.Count}");
+            AnsiConsole.MarkupLine($"[green]Excel file generated successfully![/]");
+            AnsiConsole.MarkupLine($"File:     [cyan]{Markup.Escape(Path.GetFullPath(settings.OutputPath))}[/]");
+            AnsiConsole.MarkupLine($"Rows:     [cyan]{templateData.Tables[0].Rows.Count}[/]");
+            AnsiConsole.MarkupLine($"Columns:  [cyan]{templateData.Tables[0].Columns.Count}[/]");
+
+            return 0;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Error: {ex.Message}");
-            Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+            AnsiConsole.MarkupLine($"[red]Error:[/] {Markup.Escape(ex.Message)}");
+            AnsiConsole.WriteException(ex);
+            return 1;
         }
     }
 }

@@ -1,12 +1,18 @@
-﻿using System.CommandLine;
+using OfficeOpenXml;
+using Spectre.Console.Cli;
 using SqlXl.Commands;
 
-// Create root command
-var rootCommand = new RootCommand("SqlXL - SQL Server ↔ Excel CLI tool for data professionals");
+// EPPlus license - set for non-commercial personal use (free)
+ExcelPackage.License.SetNonCommercialPersonal("SqlXl");
 
-// Add commands
-rootCommand.AddCommand(ExportCommand.Create());
-rootCommand.AddCommand(ImportCommand.Create());
+var app = new CommandApp();
+app.Configure(config =>
+{
+    config.SetApplicationName("sqlxl");
+    config.AddCommand<ExportCommand>("export")
+        .WithDescription("Export data to an Excel template from a BulkOpFeature");
+    config.AddCommand<ImportCommand>("import")
+        .WithDescription("Import Excel data to SQL Server via a BulkOpFeature");
+});
 
-// Execute
-return await rootCommand.InvokeAsync(args);
+return app.Run(args);

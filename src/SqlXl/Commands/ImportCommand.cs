@@ -1,145 +1,147 @@
-using System.CommandLine;
+using System.ComponentModel;
 using System.Data;
-using SqlXl.Core;
 using Microsoft.Extensions.Caching.Memory;
+using Spectre.Console;
+using Spectre.Console.Cli;
+using SqlXl.Core;
+using SqlXl.Models;
 
 namespace SqlXl.Commands;
 
-public static class ImportCommand
+public class ImportCommand : Command<ImportCommand.Settings>
 {
-    public static Command Create()
+    public class Settings : CommandSettings
     {
-        var command = new Command("import", "Import Excel data to SQL Server via BulkOpFeature");
+        [CommandOption("--file <FILE>")]
+        [Description("Excel file path to import (e.g., products.xlsx)")]
+        public string FilePath { get; set; } = string.Empty;
 
-        // Options
-        var fileOption = new Option<string>(
-            name: "--file",
-            description: "Excel file path to import (e.g., products.xlsx)")
+        [CommandOption("--feature <ID>")]
+        [Description("BulkOpFeature ID from ZZ_SlappFramework.BulkOpFeatures")]
+        public int? FeatureId { get; set; }
+
+        [CommandOption("--connection <CONNSTR>")]
+        [Description("SQL Server connection string")]
+        public string ConnectionString { get; set; } = "Data Source=localhost;Database=TestDatabase001;Integrated Security=true;TrustServerCertificate=true;";
+
+        public override ValidationResult Validate()
         {
-            IsRequired = true
-        };
-
-        var featureOption = new Option<int>(
-            name: "--feature",
-            description: "BulkOpFeature ID from ZZ_SlappFramework.BulkOpFeatures")
-        {
-            IsRequired = true
-        };
-
-        var connectionOption = new Option<string>(
-            name: "--connection",
-            description: "SQL Server connection string",
-            getDefaultValue: () => "Data Source=localhost;Database=TestDatabase001;Integrated Security=true;TrustServerCertificate=true;");
-
-        command.AddOption(fileOption);
-        command.AddOption(featureOption);
-        command.AddOption(connectionOption);
-
-        command.SetHandler(async (string filePath, int featureId, string connectionString) =>
-        {
-            await ExecuteImport(filePath, featureId, connectionString);
-        }, fileOption, featureOption, connectionOption);
-
-        return command;
+            if (string.IsNullOrWhiteSpace(FilePath))
+                return ValidationResult.Error("--file is required");
+            if (!File.Exists(FilePath))
+                return ValidationResult.Error($"File not found: {FilePath}");
+            if (FeatureId == null)
+                return ValidationResult.Error("--feature is required");
+            return ValidationResult.Success();
+        }
     }
 
-    private static async Task ExecuteImport(string filePath, int featureId, string connectionString)
+    public override int Execute(CommandContext context, Settings settings)
     {
+        AnsiConsole.MarkupLine($"Importing [yellow]{Markup.Escape(settings.FilePath)}[/] via Feature ID [yellow]{settings.FeatureId}[/]...");
+        AnsiConsole.WriteLine();
+
         try
         {
-            Console.WriteLine($"🔄 Importing data from Excel...");
-            Console.WriteLine($"File: {filePath}");
-            Console.WriteLine($"Feature ID: {featureId}");
-            Console.WriteLine($"Connection: {connectionString}");
-            Console.WriteLine();
+            byte[] excelBytes = File.ReadAllBytes(settings.FilePath);
+            AnsiConsole.MarkupLine($"File loaded: [cyan]{excelBytes.Length:N0} bytes[/]");
 
-            // Verify file exists
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"❌ Error: File not found: {filePath}");
-                return;
-            }
-
-            // Read Excel file
-            byte[] excelBytes = await File.ReadAllBytesAsync(filePath);
-            Console.WriteLine($"✅ File loaded: {excelBytes.Length:N0} bytes");
-
-            // Create services
             var cache = new MemoryCache(new MemoryCacheOptions());
-            var dataService = new DataService(connectionString, cache);
+            var dataService = new DataService(settings.ConnectionString, cache);
 
-            // Get the BulkOpFeature metadata
-            var feature = await dataService.GetBulkOpFeatureByIdAsync(featureId);
+            BulkOpFeature feature = null;
+            AnsiConsole.Status().Start("Fetching feature metadata...", ctx =>
+            {
+                feature = dataService.GetBulkOpFeature(settings.FeatureId!.Value);
+            });
+
             if (feature == null)
             {
-                Console.WriteLine($"❌ Error: BulkOpFeature with ID {featureId} not found.");
-                return;
+                AnsiConsole.MarkupLine($"[red]Error:[/] BulkOpFeature with ID {settings.FeatureId} not found.");
+                return 1;
             }
 
-            Console.WriteLine($"Feature: {feature.UserFriendlyFeatureName}");
-            Console.WriteLine($"Type: {feature.InsertUpdateDeleteOrCustom}");
-            Console.WriteLine($"Table: {feature.DomainSchemaName}.{feature.DomainTableName}");
-            Console.WriteLine();
+            AnsiConsole.MarkupLine($"Feature:  [cyan]{Markup.Escape(feature.UserFriendlyFeatureName)}[/]");
+            AnsiConsole.MarkupLine($"Type:     [cyan]{Markup.Escape(feature.InsertUpdateDeleteOrCustom)}[/]");
+            AnsiConsole.MarkupLine($"Table:    [cyan]{Markup.Escape(feature.DomainSchemaName)}.{Markup.Escape(feature.DomainTableName)}[/]");
+            AnsiConsole.WriteLine();
 
-            // Get expected structure and dropdown options
-            var templateData = await dataService.GetExcelTemplateDataAsync(featureId, null);
-            DataTable expectedStructure = templateData.Tables[0]; // Schema
-            DataTable dropdownOptions = templateData.Tables[1];   // FK dropdowns
+            DataSet templateData = null;
+            AnsiConsole.Status().Start("Fetching expected structure from SQL Server...", ctx =>
+            {
+                templateData = dataService.CallGetExcelTemplateDataSproc(settings.FeatureId!.Value, null);
+            });
 
-            // Import Excel data
-            var importer = new ExcelImporter();
-            var importResult = importer.ImportFromExcel(excelBytes, expectedStructure, dropdownOptions);
+            // Tables[0] column names use pipe-syntax (e.g. "ProductName|Product Name").
+            // ExcelImporter expects plain DB column names, so strip the display-name portion.
+            DataTable expectedStructure = new DataTable();
+            foreach (DataColumn col in templateData.Tables[0].Columns)
+            {
+                string dbColName = col.ColumnName.Split('|')[0].Trim();
+                expectedStructure.Columns.Add(dbColName, col.DataType);
+            }
+            DataTable dropdownOptions = templateData.Tables.Count > 1 ? templateData.Tables[1] : new DataTable();
+
+            ExcelImporter.ImportResult importResult = null;
+            AnsiConsole.Status().Start("Parsing Excel file...", ctx =>
+            {
+                var importer = new ExcelImporter();
+                importResult = importer.ImportFromExcel(excelBytes, expectedStructure, dropdownOptions);
+            });
 
             if (!importResult.IsSuccessful || importResult.ValidationErrors.Count > 0)
             {
-                Console.WriteLine($"⚠️  Excel validation errors:");
+                AnsiConsole.MarkupLine("[red]Excel validation errors:[/]");
                 foreach (var error in importResult.ValidationErrors)
-                {
-                    Console.WriteLine($"   - {error}");
-                }
-                return;
+                    AnsiConsole.MarkupLine($"  [red]-[/] {Markup.Escape(error)}");
+                return 1;
             }
 
-            Console.WriteLine($"✅ Excel parsed successfully!");
-            Console.WriteLine($"📊 Rows to process: {importResult.RowsProcessed}");
-            Console.WriteLine($"⏭️  Empty rows skipped: {importResult.EmptyRowsSkipped}");
-            Console.WriteLine();
+            AnsiConsole.MarkupLine($"Parsed:   [cyan]{importResult.RowsProcessed} rows[/], [grey]{importResult.EmptyRowsSkipped} empty rows skipped[/]");
+            AnsiConsole.WriteLine();
 
-            // Process via BulkOpsHelper
-            Console.WriteLine("🔄 Validating and processing data...");
-            var helper = new BulkOpsHelper(connectionString, dataService);
-            var result = helper.ExecuteFeatureGivenDataTable(featureId, importResult.ImportedData);
+            DataSet result = null;
+            AnsiConsole.Status().Start("Validating and processing via staging table...", ctx =>
+            {
+                result = BulkOpsHelper.ExecuteFeatureAsync(
+                    settings.ConnectionString,
+                    importResult.ImportedData,
+                    settings.FeatureId!.Value,
+                    stopAfterThisManyErrors: 10,
+                    debug: false).GetAwaiter().GetResult();
+            });
 
-            // Display results
             if (result.Tables.Count > 0 && result.Tables[0].Rows.Count > 0)
             {
-                var resultRow = result.Tables[0].Rows[0];
-                bool isSuccessful = resultRow["IsSuccessful"].ToString() == "true";
+                var row = result.Tables[0].Rows[0];
+                bool isSuccessful = row["IsSuccessful"]?.ToString()?.ToLower() == "true";
 
                 if (isSuccessful)
                 {
-                    Console.WriteLine("✅ Import completed successfully!");
-                    Console.WriteLine($"   Rows Inserted: {resultRow["RowsInserted"]}");
-                    Console.WriteLine($"   Rows Updated: {resultRow["RowsUpdated"]}");
-                    Console.WriteLine($"   Rows Deleted: {resultRow["RowsDeleted"]}");
+                    AnsiConsole.MarkupLine("[green]Import completed successfully![/]");
+                    AnsiConsole.MarkupLine($"  Rows inserted: [cyan]{row["RowsInserted"]}[/]");
+                    AnsiConsole.MarkupLine($"  Rows updated:  [cyan]{row["RowsUpdated"]}[/]");
+                    AnsiConsole.MarkupLine($"  Rows deleted:  [cyan]{row["RowsDeleted"]}[/]");
                 }
                 else
                 {
-                    Console.WriteLine("❌ Import failed with validation errors:");
+                    AnsiConsole.MarkupLine("[red]Import failed with validation errors:[/]");
                     if (result.Tables.Count > 1)
                     {
                         foreach (DataRow errorRow in result.Tables[1].Rows)
-                        {
-                            Console.WriteLine($"   Row {errorRow["RowNumber"]}: {errorRow["ErrorMessage"]}");
-                        }
+                            AnsiConsole.MarkupLine($"  Row [yellow]{errorRow["RowNumber"]}[/]: {Markup.Escape(errorRow["ErrorMessage"]?.ToString() ?? "")}");
                     }
+                    return 1;
                 }
             }
+
+            return 0;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Error: {ex.Message}");
-            Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+            AnsiConsole.MarkupLine($"[red]Error:[/] {Markup.Escape(ex.Message)}");
+            AnsiConsole.WriteException(ex);
+            return 1;
         }
     }
 }
