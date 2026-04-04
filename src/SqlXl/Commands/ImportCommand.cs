@@ -129,7 +129,7 @@ public class ImportCommand : Command<ImportCommand.Settings>
                     if (result.Tables.Count > 1)
                     {
                         foreach (DataRow errorRow in result.Tables[1].Rows)
-                            AnsiConsole.MarkupLine($"  Row [yellow]{errorRow["RowNumber"]}[/]: {Markup.Escape(errorRow["ErrorMessage"]?.ToString() ?? "")}");
+                            AnsiConsole.MarkupLine($"  [red]-[/] {Markup.Escape(errorRow["Msg"]?.ToString() ?? "")}");
                     }
                     return 1;
                 }
