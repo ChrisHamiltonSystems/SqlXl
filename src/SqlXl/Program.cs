@@ -18,7 +18,7 @@ app.Configure(config =>
     config.AddCommand<ExportCommand>("export")
         .WithDescription("Export SQL query results to Excel (requires sqlxl init)");
     config.AddCommand<ImportCommand>("import")
-        .WithDescription("Import Excel template file (with data) to SQL Server via a BulkOpFeature");
+        .WithDescription("Generate a template or import data via a custom BulkOpFeature (--feature N)");
 });
 
 return app.Run(args);
