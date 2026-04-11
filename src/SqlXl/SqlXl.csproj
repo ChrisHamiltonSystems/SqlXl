@@ -19,6 +19,7 @@
   <ItemGroup>
     <EmbeddedResource Include="sql\CreateInfrastructure.sql" />
     <EmbeddedResource Include="sql\CreateDemoDatabase.sql" />
+    <EmbeddedResource Include="sql\CreateDemoFeatures.sql" />
   </ItemGroup>
 
   <ItemGroup>

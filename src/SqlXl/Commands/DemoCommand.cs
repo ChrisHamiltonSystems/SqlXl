@@ -58,9 +58,19 @@ public class DemoCommand : Command<DemoCommand.Settings>
             });
 
             AnsiConsole.MarkupLine("[green]  SqlXL infrastructure installed.[/]");
+
+            // Step 3: run CreateDemoFeatures.sql — custom staging table, processing sproc,
+            // and BulkOpFeature row for the Assign User Roles demo (requires both above).
+            AnsiConsole.Status().Start("Configuring demo features...", ctx =>
+            {
+                SqlScriptExecutor.ExecuteEmbeddedScript("SqlXl.sql.CreateDemoFeatures.sql", demoConnStr);
+            });
+
+            AnsiConsole.MarkupLine("[green]  Demo features configured.[/]");
             AnsiConsole.WriteLine();
-            AnsiConsole.MarkupLine("[green]SqlXlDemo is ready![/] You can now run commands against it, for example:");
+            AnsiConsole.MarkupLine("[green]SqlXlDemo is ready![/] Try these commands:");
             AnsiConsole.MarkupLine($"  [cyan]sqlxl insert --table dbo.Products --connection \"{demoConnStr}\"[/]");
+            AnsiConsole.MarkupLine($"  [cyan]sqlxl import --feature 1 --connection \"{demoConnStr}\"[/]");
             AnsiConsole.WriteLine();
 
             return 0;

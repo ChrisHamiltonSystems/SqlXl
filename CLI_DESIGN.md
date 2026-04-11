@@ -280,10 +280,10 @@ All required capabilities (cell styling, data validation, sheet protection, drop
 
 | # | Item | Notes |
 |---|------|-------|
-| 1 | **EPPlus → ClosedXML migration** | License non-negotiable before public publish |
-| 2 | **`sqlxl import --feature N`** | Tier 3 command — completes the three-tier design |
+| 1 | ~~**EPPlus → ClosedXML migration**~~ ✅ | License non-negotiable before public publish |
+| 2 | ~~**`sqlxl import --feature N`**~~ ✅ | Tier 3 command — completes the three-tier design. RBAC demo (Users/Roles/UserRoles) end-to-end verified. |
 | 3 | **Connection string persistence** | After `sqlxl init`, no `--connection` flag needed for subsequent commands. Store in user-scoped config (e.g., `~/.sqlxl/config.json`). Without this, `--connection` on every command is a UX embarrassment. |
-| 4 | **Delete old `ExportCommand` / `ImportCommand`** | Dead code in a published tool looks unfinished |
+| 4 | ~~**Delete old `ExportCommand` / `ImportCommand`**~~ ✅ | Both commands were fully rewritten as part of the new design — no dead code remains. |
 | 5 | **NuGet package metadata** | Description, tags, icon, authors, project URL, license expression in `.csproj` |
 | 6 | **Basic README** | Install instructions, quickstart, connection string example |
 
@@ -311,4 +311,4 @@ Tables containing these types will not work correctly with the Excel import/expo
 ---
 
 *Last updated: 2026-04-11*
-*Status: insert, update, export, demo, init, test implemented and working. ClosedXML migration complete. Pre-publish blockers: import --feature command, connection string persistence, delete old ImportCommand.*
+*Status: All six commands implemented and smoke-tested (insert, update, export, demo, init, test, import --feature). ClosedXML migration complete. RBAC demo data + CreateDemoFeatures.sql complete and end-to-end verified. Pre-publish blockers remaining: connection string persistence, NuGet package metadata, basic README.*

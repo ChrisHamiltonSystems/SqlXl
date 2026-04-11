@@ -94,6 +94,32 @@ CREATE TABLE dbo.Categories (
     UNIQUE (CategoryName)
 );
 
+-- Users / Roles / UserRoles (RBAC example for custom import feature)
+CREATE TABLE dbo.Users (
+    UserID    INT IDENTITY(1,1) PRIMARY KEY,
+    Username  NVARCHAR(100) NOT NULL,
+    Email     NVARCHAR(200) NOT NULL,
+    IsActive  BIT NOT NULL DEFAULT (1),
+    UNIQUE (Username),
+    UNIQUE (Email)
+);
+
+CREATE TABLE dbo.Roles (
+    RoleID      INT IDENTITY(1,1) PRIMARY KEY,
+    RoleName    NVARCHAR(100) NOT NULL,
+    Description NVARCHAR(500) NULL,
+    UNIQUE (RoleName)
+);
+
+CREATE TABLE dbo.UserRoles (
+    UserRoleID  INT IDENTITY(1,1) PRIMARY KEY,
+    UserID      INT NOT NULL,
+    RoleID      INT NOT NULL,
+    UNIQUE (UserID, RoleID),
+    FOREIGN KEY (UserID) REFERENCES dbo.Users(UserID),
+    FOREIGN KEY (RoleID) REFERENCES dbo.Roles(RoleID)
+);
+
 -- Products
 CREATE TABLE dbo.Products (
     ProductID     INT IDENTITY(1,1) PRIMARY KEY,
@@ -168,6 +194,29 @@ INSERT INTO dbo.Assignments (ProjectId, EmployeeId, AssignmentDate, DurationHour
 (1, 1, '20230415 10:00:00', 8),
 (2, 2, '20230415 10:00:00', 6),
 (2, 3, '20230415 10:00:00', 4);
+
+INSERT INTO dbo.Users (Username, Email, IsActive) VALUES
+('alice.johnson', 'alice.johnson@example.com',  1),
+('bob.smith',     'bob.smith@example.com',      1),
+('carol.white',   'carol.white@example.com',    1),
+('dave.brown',    'dave.brown@example.com',     1),
+('eve.davis',     'eve.davis@example.com',      0);
+
+INSERT INTO dbo.Roles (RoleName, Description) VALUES
+('Admin',       'Full system access'),
+('Manager',     'Team management and reporting'),
+('Analyst',     'Read access to reports and dashboards'),
+('Editor',      'Create and edit content'),
+('Viewer',      'Read-only access');
+
+-- Seed a realistic starting set of role assignments (the demo scenario is:
+-- run "sqlxl import --feature N" to reassign roles in bulk via Excel)
+INSERT INTO dbo.UserRoles (UserID, RoleID)
+SELECT u.UserID, r.RoleID FROM dbo.Users u JOIN dbo.Roles r
+    ON (u.Username = 'alice.johnson' AND r.RoleName IN ('Admin', 'Manager'))
+    OR (u.Username = 'bob.smith'     AND r.RoleName IN ('Analyst'))
+    OR (u.Username = 'carol.white'   AND r.RoleName IN ('Editor', 'Viewer'))
+    OR (u.Username = 'dave.brown'    AND r.RoleName IN ('Viewer'));
 
 INSERT INTO dbo.UniqueTestItems (ColumnA, ColumnB, ColumnC, ColumnD, ColumnE) VALUES
 ('SampleText', 'ColBSampleText', 2, 3, 4);
