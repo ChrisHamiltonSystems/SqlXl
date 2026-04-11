@@ -17,7 +17,7 @@ public class ImportCommand : Command<ImportCommand.Settings>
         public string FilePath { get; set; } = string.Empty;
 
         [CommandOption("--feature <ID>")]
-        [Description("BulkOpFeature ID from ZZ_SlappFramework.BulkOpFeatures")]
+        [Description("BulkOpFeature ID from SqlXl.BulkOpFeatures")]
         public int? FeatureId { get; set; }
 
         [CommandOption("--connection <CONNSTR>")]

@@ -13,7 +13,7 @@ public class ExportCommand : Command<ExportCommand.Settings>
     public class Settings : CommandSettings
     {
         [CommandOption("--feature <ID>")]
-        [Description("BulkOpFeature ID from ZZ_SlappFramework.BulkOpFeatures")]
+        [Description("BulkOpFeature ID from SqlXl.BulkOpFeatures")]
         public int? FeatureId { get; set; }
 
         [CommandOption("--output <FILE>")]

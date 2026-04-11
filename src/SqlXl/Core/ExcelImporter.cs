@@ -422,7 +422,7 @@ public class ExcelImporter
         foreach (DataColumn sourceColumn in structure.Columns)
         {
             // Create new column with same name but as string type
-            // This matches how SlappFramework processes data
+            // This matches how SqlXL processes data
             result.Columns.Add(sourceColumn.ColumnName, typeof(string));
         }
 

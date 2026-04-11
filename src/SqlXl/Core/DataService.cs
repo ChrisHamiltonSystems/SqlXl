@@ -30,7 +30,7 @@ public class DataService
 
             // Define the SQL query
             const string sql = @"
-            UPDATE [ZZ_SlappFramework].[BulkOpFeatures]
+            UPDATE [SqlXl].[BulkOpFeatures]
             SET GetRowsToEdit_SelectStatement = @SelectStatement
             WHERE ID = @FeatureID";
 
@@ -61,7 +61,7 @@ public class DataService
                         SprocToProcessPerfectStagedData,
                         MenuDisplayRanking
                     FROM
-                        ZZ_SlappFramework.BulkOpFeatures
+                        SqlXl.BulkOpFeatures
                     WHERE
                         ID = @Id";
             return connection.QuerySingle<BulkOpFeature>(query, new { Id = featureID });
@@ -78,7 +78,7 @@ public class DataService
             connection.Open();
 
             // Create the command for the stored procedure
-            using (SqlCommand command = new SqlCommand("[ZZ_SlappFramework].ValidateThenRunSelectQueryReturnJsonMetadataAndData", connection))
+            using (SqlCommand command = new SqlCommand("[SqlXl].ValidateThenRunSelectQueryReturnJsonMetadataAndData", connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
 
@@ -130,7 +130,7 @@ public class DataService
         using (SqlConnection connection = new SqlConnection(_connectionString))
         {
             connection.Open();
-            using (SqlCommand command = new SqlCommand($"[ZZ_SlappFramework].[{sprocName}]", connection))
+            using (SqlCommand command = new SqlCommand($"[SqlXl].[{sprocName}]", connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
                 command.Parameters.Add(new SqlParameter("@FeatureID", SqlDbType.Int) { Value = featureID });
@@ -172,7 +172,7 @@ public class DataService
             connection.Open();
 
             // Create the command for the stored procedure
-            using (SqlCommand command = new SqlCommand("ZZ_SlappFramework.GetMeta_ColumnsForTableAsJson", connection))
+            using (SqlCommand command = new SqlCommand("SqlXl.GetMeta_ColumnsForTableAsJson", connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
 
@@ -203,7 +203,7 @@ public class DataService
         using (SqlConnection connection = new SqlConnection(_connectionString))
         {
             connection.Open();
-            using (SqlCommand command = new SqlCommand("[ZZ_SlappFramework].[GetRowsToEdit]", connection))
+            using (SqlCommand command = new SqlCommand("[SqlXl].[GetRowsToEdit]", connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
                 command.Parameters.Add(new SqlParameter("@FeatureID", SqlDbType.Int) { Value = featureID });
@@ -243,7 +243,7 @@ public class DataService
             connection.Open();
 
             // Create the SQL command to execute the stored procedure
-            using (SqlCommand command = new SqlCommand("[ZZ_SlappFramework].[GetFormStarterData]", connection))
+            using (SqlCommand command = new SqlCommand("[SqlXl].[GetFormStarterData]", connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
 
@@ -292,7 +292,7 @@ public class DataService
             connection.Open();
 
             // Create the SQL command to execute the stored procedure
-            using (SqlCommand command = new SqlCommand("[ZZ_SlappFramework].[GetExcelTemplateData]", connection))
+            using (SqlCommand command = new SqlCommand("[SqlXl].[GetExcelTemplateData]", connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
 
@@ -325,7 +325,7 @@ public class DataService
         using (var connection = new SqlConnection(_connectionString))
         {
             connection.Open();
-            using (var command = new SqlCommand("[ZZ_SlappFramework].[GetDropDownOptionsForFeature]", connection))
+            using (var command = new SqlCommand("[SqlXl].[GetDropDownOptionsForFeature]", connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
                 command.Parameters.AddWithValue("@FeatureID", featureID);

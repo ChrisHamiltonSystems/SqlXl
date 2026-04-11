@@ -68,7 +68,7 @@ public class BulkOpsSettings
     public int NumberOfSampleRowsForSmokeTests { get; set; } = 5;
     public int StopAfterThisManyErrors { get; set; } = 10;
     public string DomainSchemaName { get; set; } = "dbo";
-    public string StagingSchemaName { get; set; } = "ZZ_SlappFramework";
+    public string StagingSchemaName { get; set; } = "SqlXl";
 }//end class 
 #endregion
 
@@ -203,7 +203,7 @@ public class BulkOpsHelper
     private string SqlToDropDebugZZTempIfItExists()
     {
         string sql = SqlToDropZZTempIfItExists();
-        sql = sql.Replace("#ZZTemp", "ZZ_SlappFramework.DebugZZTemp");
+        sql = sql.Replace("#ZZTemp", "SqlXl.DebugZZTemp");
         return sql;
     }//end method
 
@@ -239,7 +239,7 @@ public class BulkOpsHelper
         // Create table statement would be identical 
         // to creating #ZZTemp, except for table name...
         string sql = SqlToCreateTableZZTemp(dataTable);
-        sql = sql.Replace("#ZZTemp", "ZZ_SlappFramework.DebugZZTemp");
+        sql = sql.Replace("#ZZTemp", "SqlXl.DebugZZTemp");
         return sql;
     }//end method
 
@@ -457,7 +457,7 @@ public class BulkOpsHelper
         sqlToReCreateZZTemp = sqlToReCreateZZTemp + SqlToCreateTableZZTemp(dataTable);
 
         // If debug mode, write a permanent table
-        // parallel to #ZZTemp, called "ZZ_SlappFramework.DebugZZTemp"...
+        // parallel to #ZZTemp, called "SqlXl.DebugZZTemp"...
         if (debug)
         {
             sqlToReCreateZZTemp = sqlToReCreateZZTemp +
@@ -483,9 +483,9 @@ public class BulkOpsHelper
 
             if (debug)
             {
-                //truncate table ZZ_SlappFramework.DebugLog;--ToDo, best place for this??
+                //truncate table SqlXl.DebugLog;--ToDo, best place for this??
                 InsertToDestinationTableNameUsingSqlBulkCopy(conn, dataTable,
-                    destinationTableName: "ZZ_SlappFramework.DebugZZTemp");
+                    destinationTableName: "SqlXl.DebugZZTemp");
             }//end if 
 
             // Purge staging and run all validations...
@@ -1361,10 +1361,10 @@ public class BulkOpsHelper
         // Drop/Create DebugZZTemp only if debug is enabled
         if (debug)
         {
-            scriptBuilder.AppendLine("IF OBJECT_ID('ZZ_SlappFramework.DebugZZTemp') IS NOT NULL");
-            scriptBuilder.AppendLine("    DROP TABLE ZZ_SlappFramework.DebugZZTemp;");
+            scriptBuilder.AppendLine("IF OBJECT_ID('SqlXl.DebugZZTemp') IS NOT NULL");
+            scriptBuilder.AppendLine("    DROP TABLE SqlXl.DebugZZTemp;");
 
-            scriptBuilder.AppendLine("CREATE TABLE ZZ_SlappFramework.DebugZZTemp (");
+            scriptBuilder.AppendLine("CREATE TABLE SqlXl.DebugZZTemp (");
             scriptBuilder.AppendLine($"   RequestID NVARCHAR(36) DEFAULT '{requestId}', -- Default value");
             scriptBuilder.AppendLine("    ZZTemp_ID INT IDENTITY(2,1),   -- Auto-incrementing ID starting at 2");
 
@@ -1532,7 +1532,7 @@ public class BulkOpsHelper
     /// - Uncheck "Microsoft.Data.SqlClient.SqlException"
     /// - Or just run in Release mode for smoother development experience
     ///
-    /// This is the core of SlappFramework's value proposition:
+    /// This is the core of SqlXL's value proposition:
     /// "Data as valid as your staging table, GUARANTEED!" - Zero validation code required.
     /// </summary>
     private static async Task<DataSet> ExecuteMainProcessingSprocAsync(SqlConnection connection, int bulkOpFeaturesID, string requestId, bool debug = false)
@@ -1541,7 +1541,7 @@ public class BulkOpsHelper
 
         try
         {
-            await using var processCommand = new SqlCommand("EXEC ZZ_SlappFramework.ProcessRawDataFromZZTemp @BulkOpFeaturesID, @RequestID, @Debug;", connection);
+            await using var processCommand = new SqlCommand("EXEC SqlXl.ProcessRawDataFromZZTemp @BulkOpFeaturesID, @RequestID, @Debug;", connection);
             processCommand.Parameters.AddWithValue("@BulkOpFeaturesID", bulkOpFeaturesID);
             processCommand.Parameters.AddWithValue("@RequestID", requestId);
             processCommand.Parameters.AddWithValue("@Debug", debug);
@@ -1564,7 +1564,7 @@ public class BulkOpsHelper
 
         try
         {
-            using (var command = new SqlCommand("[ZZ_SlappFramework].[PurgeStagingValidateZZTempAndReturnErrors]", connection))
+            using (var command = new SqlCommand("[SqlXl].[PurgeStagingValidateZZTempAndReturnErrors]", connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
                 command.Parameters.AddWithValue("@BulkOpFeaturesID", bulkOpFeaturesID);

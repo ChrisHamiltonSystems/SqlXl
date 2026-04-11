@@ -11,13 +11,13 @@ Creates objects in this order below...
 ### 5. (none) Triggers
 ***************************************/
 
--- Create a separate schema for ZZ_SlappFramework functionality.
-CREATE SCHEMA ZZ_SlappFramework;
+-- Create a separate schema for SqlXl functionality.
+CREATE SCHEMA SqlXl;
 go
 
 /******************************
 User-Defined Function(s)...**/
-CREATE FUNCTION [ZZ_SlappFramework].[SingularizeTableName](@TableName NVARCHAR(128))
+CREATE FUNCTION [SqlXl].[SingularizeTableName](@TableName NVARCHAR(128))
 RETURNS NVARCHAR(128)
 AS
 BEGIN
@@ -35,7 +35,7 @@ BEGIN
 END
 go
 
-CREATE FUNCTION [ZZ_SlappFramework].[GenerateSelectStatementToSupportBulkEditingWithFKs]
+CREATE FUNCTION [SqlXl].[GenerateSelectStatementToSupportBulkEditingWithFKs]
   (
       @SchemaName NVARCHAR(128),
       @TableName NVARCHAR(128)
@@ -120,15 +120,15 @@ CREATE FUNCTION [ZZ_SlappFramework].[GenerateSelectStatementToSupportBulkEditing
               DECLARE @PKTableSchema NVARCHAR(128);
               DECLARE @PKTableName NVARCHAR(128);
 
-              SET @PKTableSchema = ZZ_SlappFramework.ParseSchemaFromReferencedTable(@PKTable);
-              SET @PKTableName = ZZ_SlappFramework.ParseTableFromReferencedTable(@PKTable);
+              SET @PKTableSchema = SqlXl.ParseSchemaFromReferencedTable(@PKTable);
+              SET @PKTableName = SqlXl.ParseTableFromReferencedTable(@PKTable);
 
-              SET @BestDisplayColumn = ZZ_SlappFramework.GetBestDisplayColumn(@PKTableSchema, @PKTableName);
+              SET @BestDisplayColumn = SqlXl.GetBestDisplayColumn(@PKTableSchema, @PKTableName);
 
 			-- Add FK display column with assignment syntax (NO AMBIGUITY!) using pipe syntax
 			SET @SelectClause = @SelectClause +
 				CASE WHEN @SelectClause = '' THEN '' ELSE ',' + CHAR(13) + CHAR(10) + '    ' END +
-				QUOTENAME(@ColumnName + '|' + ZZ_SlappFramework.SingularizeTableName(@ReferencedTableName)) + ' = ' +
+				QUOTENAME(@ColumnName + '|' + SqlXl.SingularizeTableName(@ReferencedTableName)) + ' = ' +
 				'CONCAT(' + @FullTableName + '.' + QUOTENAME(@ColumnName) + ', '' - '', ' +
 				@PKTable + '.' + QUOTENAME(@BestDisplayColumn) + ')';
 
@@ -143,7 +143,7 @@ CREATE FUNCTION [ZZ_SlappFramework].[GenerateSelectStatementToSupportBulkEditing
               -- Regular column: Use assignment syntax with full qualification (NO AMBIGUITY!) using pipe syntax
               SET @SelectClause = @SelectClause +
                   CASE WHEN @SelectClause = '' THEN '' ELSE ',' + CHAR(13) + CHAR(10) + '    ' END +
-                  QUOTENAME(@ColumnName + '|' + [ZZ_SlappFramework].PascalCaseToLabel(@ColumnName)) + ' = ' + @FullTableName + '.' + QUOTENAME(@ColumnName);
+                  QUOTENAME(@ColumnName + '|' + [SqlXl].PascalCaseToLabel(@ColumnName)) + ' = ' + @FullTableName + '.' + QUOTENAME(@ColumnName);
           END
 
           FETCH NEXT FROM column_cursor INTO @ColumnName, @OrdinalPosition, @IsNullable, @IsFK, @PKTable, @PKColumn,
@@ -163,7 +163,7 @@ CREATE FUNCTION [ZZ_SlappFramework].[GenerateSelectStatementToSupportBulkEditing
   END;
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].[GenerateDebugStarter]()
+CREATE FUNCTION [SqlXl].[GenerateDebugStarter]()
 RETURNS NVARCHAR(MAX)
 AS
 BEGIN
@@ -178,17 +178,17 @@ IF OBJECT_ID(''tempdb..#Messages'') IS NOT NULL
 
 SELECT * 
 INTO #ZZTemp
-FROM ZZ_SlappFramework.DebugZZTemp
+FROM SqlXl.DebugZZTemp
 ;--end select-into
 
 CREATE TABLE #Messages (Msg NVARCHAR(MAX));';
 END;--end func 
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].PascalCaseToLabel (@Input NVARCHAR(MAX))
-/*Examples...SELECT [ZZ_SlappFramework].PascalCaseToLabel('LastName') AS Label1,
-       [ZZ_SlappFramework].PascalCaseToLabel('HireDate') AS Label2,
-       [ZZ_SlappFramework].PascalCaseToLabel('PascalCaseToLabel') AS Label3;
+CREATE FUNCTION [SqlXl].PascalCaseToLabel (@Input NVARCHAR(MAX))
+/*Examples...SELECT [SqlXl].PascalCaseToLabel('LastName') AS Label1,
+       [SqlXl].PascalCaseToLabel('HireDate') AS Label2,
+       [SqlXl].PascalCaseToLabel('PascalCaseToLabel') AS Label3;
 Result:
 Label1	Label2	Label3
 Last Name	Hire Date	Pascal Case To Label 
@@ -222,7 +222,7 @@ BEGIN
 END --end func 
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].TableExists 
+CREATE FUNCTION [SqlXl].TableExists 
 (
 @SchemaName nvarchar(128),
 @TableName NVARCHAR(128)
@@ -252,7 +252,7 @@ BEGIN
 END;--end func
 go 
 
-CREATE FUNCTION [ZZ_SlappFramework].SprocExists 
+CREATE FUNCTION [SqlXl].SprocExists 
 (
     @SchemaName NVARCHAR(128),
     @SprocName NVARCHAR(128)
@@ -276,7 +276,7 @@ BEGIN
 END; -- end func
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].ColumnExists 
+CREATE FUNCTION [SqlXl].ColumnExists 
 (
     @SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
@@ -303,7 +303,7 @@ BEGIN
 END; -- end func
 GO
 
-create FUNCTION [ZZ_SlappFramework].[GenerateCreateStagingTableSQLWith_NO_IdentityProperty]
+create FUNCTION [SqlXl].[GenerateCreateStagingTableSQLWith_NO_IdentityProperty]
 (
     @DomainSchemaName NVARCHAR(128),
     @DomainTableName NVARCHAR(128),
@@ -351,7 +351,7 @@ BEGIN
 END --end func
 GO
 
-create FUNCTION [ZZ_SlappFramework].GenerateRandomString
+create FUNCTION [SqlXl].GenerateRandomString
 (
     @MaxLength INT
 )
@@ -383,7 +383,7 @@ BEGIN
 END;--end func 
 GO
 
-create FUNCTION [ZZ_SlappFramework].[SqlToListAllRowsFromOnlyWithinZZTempThatDuplicate_A_ValueForColumn]
+create FUNCTION [SqlXl].[SqlToListAllRowsFromOnlyWithinZZTempThatDuplicate_A_ValueForColumn]
 (
     @ColumnNameToCheckForDuplication NVARCHAR(128)
 )
@@ -417,7 +417,7 @@ BEGIN
 END --end func 
 GO
 
-create FUNCTION [ZZ_SlappFramework].GenerateDuplicateCheckSQL
+create FUNCTION [SqlXl].GenerateDuplicateCheckSQL
 (
     @DomainSchemaName NVARCHAR(128),
     @DomainTableName NVARCHAR(128),
@@ -494,7 +494,7 @@ BEGIN
 END --end func
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].[CreateInvalidNonForeignKeySampleValue]
+CREATE FUNCTION [SqlXl].[CreateInvalidNonForeignKeySampleValue]
 (
     @DataType NVARCHAR(128)
 )
@@ -532,7 +532,7 @@ BEGIN
 END --end func
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].[CreateNonForeignKeySampleValue]
+CREATE FUNCTION [SqlXl].[CreateNonForeignKeySampleValue]
 (
     @DataType NVARCHAR(128),
 	@MaxLengthForString int
@@ -545,8 +545,8 @@ BEGIN
     -- Return a sample value based on the data type
     SET @Result = CASE @DataType
         WHEN 'int' THEN '1'
-        WHEN 'nvarchar' THEN '' --[ZZ_SlappFramework].GenerateRandomString(@MaxLengthForString)
-        WHEN 'varchar' THEN '' --[ZZ_SlappFramework].GenerateRandomString(@MaxLengthForString)
+        WHEN 'nvarchar' THEN '' --[SqlXl].GenerateRandomString(@MaxLengthForString)
+        WHEN 'varchar' THEN '' --[SqlXl].GenerateRandomString(@MaxLengthForString)
         WHEN 'datetime' THEN '2023-01-01T00:00:00'
 		when 'datetime2' then '2024-04-18 12:34:56'
         WHEN 'bit' THEN '1'
@@ -571,7 +571,7 @@ BEGIN
 END --end func
 go
 
-CREATE FUNCTION ZZ_SlappFramework.GetPrimaryKeyColumnName (@SchemaName nvarchar(128), @TableName NVARCHAR(256))
+CREATE FUNCTION SqlXl.GetPrimaryKeyColumnName (@SchemaName nvarchar(128), @TableName NVARCHAR(256))
 RETURNS NVARCHAR(256)
 AS
 BEGIN
@@ -591,7 +591,7 @@ BEGIN
 END;--end func 
 go
 
-CREATE FUNCTION [ZZ_SlappFramework].[GenerateSqlToInsert_a_SingleValidSampleRowToStagingTable]
+CREATE FUNCTION [SqlXl].[GenerateSqlToInsert_a_SingleValidSampleRowToStagingTable]
 (
 	@DomainSchemaName nvarchar(128),
 	@DomainTableName nvarchar(128),
@@ -638,7 +638,7 @@ BEGIN --begin func
 
         -- Generate the sample value by looking it up in the Meta_Columns table...		
         SET @ValueList += 
-			'(select ValidSampleValue from ZZ_SlappFramework.Meta_Columns ' + 
+			'(select ValidSampleValue from SqlXl.Meta_Columns ' + 
 			' where SchemaName = ''' + @DomainSchemaName + ''' ' + 
 			' and TableName = ''' + @DomainTableName + ''' ' + 
 			' and ColumnName = ''' + @ColumnName + ''' )';
@@ -656,7 +656,7 @@ BEGIN --begin func
 END; --end func
 go
 
-CREATE FUNCTION [ZZ_SlappFramework].[ProposeStagingTableNameForInsertFeature] (@SourceTableName NVARCHAR(128))
+CREATE FUNCTION [SqlXl].[ProposeStagingTableNameForInsertFeature] (@SourceTableName NVARCHAR(128))
 RETURNS NVARCHAR(128) 
 AS
 BEGIN
@@ -665,7 +665,7 @@ BEGIN
 END;
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].[ProposeStagingTableNameForUpdateFeature] (@SourceTableName NVARCHAR(128))
+CREATE FUNCTION [SqlXl].[ProposeStagingTableNameForUpdateFeature] (@SourceTableName NVARCHAR(128))
 RETURNS NVARCHAR(128) 
 AS
 BEGIN
@@ -674,7 +674,7 @@ BEGIN
 END;
 GO
 
-CREATE FUNCTION ZZ_SlappFramework.GetIdentityColumnName (@SchemaName nvarchar(128), @TableName NVARCHAR(256))
+CREATE FUNCTION SqlXl.GetIdentityColumnName (@SchemaName nvarchar(128), @TableName NVARCHAR(256))
 RETURNS NVARCHAR(256)
 AS
 BEGIN
@@ -694,7 +694,7 @@ GO
 
 --Returns one or more columns for a given PK,UQ,FK constraint name
 --....(more than one column in cases of composite keys)...
-CREATE FUNCTION ZZ_SlappFramework.GetConstraintColumns (@ConstraintName NVARCHAR(256), @SchemaName NVARCHAR(256))
+CREATE FUNCTION SqlXl.GetConstraintColumns (@ConstraintName NVARCHAR(256), @SchemaName NVARCHAR(256))
 RETURNS TABLE
 AS
 RETURN
@@ -714,7 +714,7 @@ RETURN
 );
 GO
 
-CREATE FUNCTION ZZ_SlappFramework.GenerateUniqueConstraintSQL
+CREATE FUNCTION SqlXl.GenerateUniqueConstraintSQL
 (
 	--Builds a series of Alter Table statements
 	--that would create unique key constraints
@@ -771,7 +771,7 @@ BEGIN --begin func
 END --end func
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].[GenerateSelectStatementToResultInOneValidRow] 
+CREATE FUNCTION [SqlXl].[GenerateSelectStatementToResultInOneValidRow] 
 (
     @SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128)
@@ -795,7 +795,7 @@ BEGIN
     END --end if 
 
 	declare @PrimaryKeyColumn nvarchar(256) = 
-		ZZ_SlappFramework.GetPrimaryKeyColumnName (@SchemaName, @TableName);
+		SqlXl.GetPrimaryKeyColumnName (@SchemaName, @TableName);
 
     DECLARE @Sql NVARCHAR(MAX) = '';
     DECLARE @ColumnList NVARCHAR(MAX) = '';
@@ -842,7 +842,7 @@ BEGIN
 			--Inject magic pipe-label syntax for field label...
 			--For example...
 			--, [HireDate|Hire Date] = '2024-01-17'
-            ', [' + @ColumnName + '|' + [ZZ_SlappFramework].PascalCaseToLabel (@ColumnName) + '] = ' + @DefaultValue + CHAR(13) + CHAR(10);
+            ', [' + @ColumnName + '|' + [SqlXl].PascalCaseToLabel (@ColumnName) + '] = ' + @DefaultValue + CHAR(13) + CHAR(10);
         
         FETCH NEXT FROM ColumnCursor INTO @ColumnName, @DataType;
     END;
@@ -868,7 +868,7 @@ BEGIN
 END; 
 GO
 
-CREATE FUNCTION ZZ_SlappFramework.RemoveMultiLineComments (@SQLCode NVARCHAR(MAX)) 
+CREATE FUNCTION SqlXl.RemoveMultiLineComments (@SQLCode NVARCHAR(MAX)) 
 RETURNS NVARCHAR(MAX)
 AS
 BEGIN
@@ -905,7 +905,7 @@ BEGIN
 END 
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].[GetBestDisplayColumn]
+CREATE FUNCTION [SqlXl].[GetBestDisplayColumn]
 (
     @SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128)
@@ -917,7 +917,7 @@ BEGIN
     DECLARE @PrimaryKeyColumn NVARCHAR(128);
     
     -- Get the primary key column name
-    SET @PrimaryKeyColumn = ZZ_SlappFramework.GetPrimaryKeyColumnName(@SchemaName, @TableName);
+    SET @PrimaryKeyColumn = SqlXl.GetPrimaryKeyColumnName(@SchemaName, @TableName);
     
     -- Priority 1: Find first single-column unique constraint (non-PK)
     SELECT TOP 1 @BestColumn = ccu.COLUMN_NAME
@@ -959,7 +959,7 @@ BEGIN
 END;
 Go
 
-CREATE FUNCTION [ZZ_SlappFramework].[GenerateDropdownQuery]
+CREATE FUNCTION [SqlXl].[GenerateDropdownQuery]
 (
     @SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128)
@@ -972,10 +972,10 @@ BEGIN
     DECLARE @SQL NVARCHAR(MAX);
     
     -- Get the primary key column name
-    SET @PkColName = ZZ_SlappFramework.GetPrimaryKeyColumnName(@SchemaName, @TableName);
+    SET @PkColName = SqlXl.GetPrimaryKeyColumnName(@SchemaName, @TableName);
     
     -- Get the best display column name  
-    SET @BestDisplayColName = ZZ_SlappFramework.GetBestDisplayColumn(@SchemaName, @TableName);
+    SET @BestDisplayColName = SqlXl.GetBestDisplayColumn(@SchemaName, @TableName);
     
     -- Build the dropdown query
     SET @SQL = 'select [Value] = ' + QUOTENAME(@PkColName) +
@@ -987,7 +987,7 @@ BEGIN
 END;
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].[ParseSchemaFromReferencedTable]
+CREATE FUNCTION [SqlXl].[ParseSchemaFromReferencedTable]
 -- Helper function to parse "Schema.Table" format
 (
     @ReferencedTable NVARCHAR(256)  -- Format: "SomeSchema.SomeTableName"
@@ -1010,7 +1010,7 @@ BEGIN
 END;
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].[ParseTableFromReferencedTable]
+CREATE FUNCTION [SqlXl].[ParseTableFromReferencedTable]
 (
     @ReferencedTable NVARCHAR(256)  -- Format: "SomeSchema.SomeTableName"
 )
@@ -1033,7 +1033,7 @@ BEGIN
 END;
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].[GetBestDisplayColumnFromReferencedTable]
+CREATE FUNCTION [SqlXl].[GetBestDisplayColumnFromReferencedTable]
 -- Overloaded function that accepts "Schema.Table" format
 (
     @ReferencedTable NVARCHAR(256)  -- Format: "SomeSchema.SomeTableName"
@@ -1041,14 +1041,14 @@ CREATE FUNCTION [ZZ_SlappFramework].[GetBestDisplayColumnFromReferencedTable]
 RETURNS NVARCHAR(128)
 AS
 BEGIN
-    DECLARE @SchemaName NVARCHAR(128) = ZZ_SlappFramework.ParseSchemaFromReferencedTable(@ReferencedTable);
-    DECLARE @TableName NVARCHAR(128) = ZZ_SlappFramework.ParseTableFromReferencedTable(@ReferencedTable);
+    DECLARE @SchemaName NVARCHAR(128) = SqlXl.ParseSchemaFromReferencedTable(@ReferencedTable);
+    DECLARE @TableName NVARCHAR(128) = SqlXl.ParseTableFromReferencedTable(@ReferencedTable);
     
-    RETURN ZZ_SlappFramework.GetBestDisplayColumn(@SchemaName, @TableName);
+    RETURN SqlXl.GetBestDisplayColumn(@SchemaName, @TableName);
 END;
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].[GenerateDropdownQueryFromReferencedTable]
+CREATE FUNCTION [SqlXl].[GenerateDropdownQueryFromReferencedTable]
 -- Overloaded dropdown query generator
 (
     @ReferencedTable NVARCHAR(256)  -- Format: "SomeSchema.SomeTableName"
@@ -1056,14 +1056,14 @@ CREATE FUNCTION [ZZ_SlappFramework].[GenerateDropdownQueryFromReferencedTable]
 RETURNS NVARCHAR(MAX)
 AS
 BEGIN
-    DECLARE @SchemaName NVARCHAR(128) = ZZ_SlappFramework.ParseSchemaFromReferencedTable(@ReferencedTable);
-    DECLARE @TableName NVARCHAR(128) = ZZ_SlappFramework.ParseTableFromReferencedTable(@ReferencedTable);
+    DECLARE @SchemaName NVARCHAR(128) = SqlXl.ParseSchemaFromReferencedTable(@ReferencedTable);
+    DECLARE @TableName NVARCHAR(128) = SqlXl.ParseTableFromReferencedTable(@ReferencedTable);
     
-    RETURN ZZ_SlappFramework.GenerateDropdownQuery(@SchemaName, @TableName);
+    RETURN SqlXl.GenerateDropdownQuery(@SchemaName, @TableName);
 END;
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].[GenerateDisplayViewSQL]
+CREATE FUNCTION [SqlXl].[GenerateDisplayViewSQL]
   (
       @SchemaName NVARCHAR(128),
       @TableName NVARCHAR(128)
@@ -1150,10 +1150,10 @@ CREATE FUNCTION [ZZ_SlappFramework].[GenerateDisplayViewSQL]
               DECLARE @PKTableSchema NVARCHAR(128);
               DECLARE @PKTableName NVARCHAR(128);
 
-              SET @PKTableSchema = ZZ_SlappFramework.ParseSchemaFromReferencedTable(@PKTable);
-              SET @PKTableName = ZZ_SlappFramework.ParseTableFromReferencedTable(@PKTable);
+              SET @PKTableSchema = SqlXl.ParseSchemaFromReferencedTable(@PKTable);
+              SET @PKTableName = SqlXl.ParseTableFromReferencedTable(@PKTable);
 
-              SET @BestDisplayColumn = ZZ_SlappFramework.GetBestDisplayColumn(@PKTableSchema, @PKTableName);
+              SET @BestDisplayColumn = SqlXl.GetBestDisplayColumn(@PKTableSchema, @PKTableName);
 
               -- Add FK display column with assignment syntax (NO AMBIGUITY!) using pipe syntax
               SET @SelectClause = @SelectClause +
@@ -1164,7 +1164,7 @@ CREATE FUNCTION [ZZ_SlappFramework].[GenerateDisplayViewSQL]
               -- Add to FK columns for end with assignment syntax (NO AMBIGUITY!) using pipe syntax
               SET @FKColumnsAtEnd = @FKColumnsAtEnd +
                   CASE WHEN @FKColumnsAtEnd = '' THEN '' ELSE ',' + CHAR(13) + CHAR(10) + '    ' END +
-                  QUOTENAME(@ColumnName + '|' + [ZZ_SlappFramework].PascalCaseToLabel(@ColumnName)) + ' = ' + @FullTableName + '.' + QUOTENAME(@ColumnName);
+                  QUOTENAME(@ColumnName + '|' + [SqlXl].PascalCaseToLabel(@ColumnName)) + ' = ' + @FullTableName + '.' + QUOTENAME(@ColumnName);
 
               -- Add JOIN clause
               SET @JoinClause = @JoinClause + CHAR(13) + CHAR(10) +
@@ -1177,7 +1177,7 @@ CREATE FUNCTION [ZZ_SlappFramework].[GenerateDisplayViewSQL]
               -- Regular column: Use assignment syntax with full qualification (NO AMBIGUITY!) using pipe syntax
               SET @SelectClause = @SelectClause +
                   CASE WHEN @SelectClause = '' THEN '' ELSE ',' + CHAR(13) + CHAR(10) + '    ' END +
-                  QUOTENAME(@ColumnName + '|' + [ZZ_SlappFramework].PascalCaseToLabel(@ColumnName)) + ' = ' + @FullTableName + '.' + QUOTENAME(@ColumnName);
+                  QUOTENAME(@ColumnName + '|' + [SqlXl].PascalCaseToLabel(@ColumnName)) + ' = ' + @FullTableName + '.' + QUOTENAME(@ColumnName);
           END
 
           FETCH NEXT FROM column_cursor INTO @ColumnName, @OrdinalPosition, @IsNullable, @IsFK, @PKTable, @PKColumn,
@@ -1207,7 +1207,7 @@ CREATE FUNCTION [ZZ_SlappFramework].[GenerateDisplayViewSQL]
 
 /******************************
 Table(s)...**/
-CREATE TABLE [ZZ_SlappFramework].[Meta_Columns](
+CREATE TABLE [SqlXl].[Meta_Columns](
 	/*Intended to hold all meta data needed 
 	by BulkOpsHelper for a column in a domain table.*/
 
@@ -1243,13 +1243,13 @@ CREATE TABLE [ZZ_SlappFramework].[Meta_Columns](
 
 	-- CHECK constraint to ensure that the specified column exists within the specified table and schema
 	CONSTRAINT chk_ColumnExists_Meta_Columns 
-		CHECK ([ZZ_SlappFramework].ColumnExists(SchemaName, TableName, ColumnName) = 1)
+		CHECK ([SqlXl].ColumnExists(SchemaName, TableName, ColumnName) = 1)
 
 	--Note: consider adding more check constraints on remaining columns, for further validation??
 ); --end create table
 GO
 
-CREATE TABLE [ZZ_SlappFramework].[BulkOpFeatures](
+CREATE TABLE [SqlXl].[BulkOpFeatures](
 	[ID] [int] IDENTITY(1,1) NOT NULL,
 	[UserFriendlyFeatureName] [nvarchar](255) NOT NULL,
 	[InsertUpdateDeleteOrCustom] [nvarchar](6) NOT NULL,
@@ -1289,36 +1289,36 @@ CREATE TABLE [ZZ_SlappFramework].[BulkOpFeatures](
 
 	-- For other columns, check that the specified db objects exist...
 	CONSTRAINT chk_TableExists 
-		CHECK ([ZZ_SlappFramework].TableExists(DomainSchemaName, DomainTableName) = 1),
+		CHECK ([SqlXl].TableExists(DomainSchemaName, DomainTableName) = 1),
 
 	CONSTRAINT chk_TableExists002 
-		CHECK ([ZZ_SlappFramework].TableExists(StagingSchemaName, StagingTableName) = 1),
+		CHECK ([SqlXl].TableExists(StagingSchemaName, StagingTableName) = 1),
 
 	CONSTRAINT chk_SprocExists 
-		CHECK ([ZZ_SlappFramework].SprocExists(DomainSchemaName, SprocToProcessPerfectStagedData) = 1)
+		CHECK ([SqlXl].SprocExists(DomainSchemaName, SprocToProcessPerfectStagedData) = 1)
 ) ON [PRIMARY]
 GO
 
-ALTER TABLE [ZZ_SlappFramework].[BulkOpFeatures] ADD  CONSTRAINT [PK_BulkOpFeatures] PRIMARY KEY CLUSTERED 
+ALTER TABLE [SqlXl].[BulkOpFeatures] ADD  CONSTRAINT [PK_BulkOpFeatures] PRIMARY KEY CLUSTERED 
 (
 	[ID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
 
-ALTER TABLE [ZZ_SlappFramework].[BulkOpFeatures] ADD  CONSTRAINT [UK_BulkOpFeatures] UNIQUE NONCLUSTERED 
+ALTER TABLE [SqlXl].[BulkOpFeatures] ADD  CONSTRAINT [UK_BulkOpFeatures] UNIQUE NONCLUSTERED 
 (
 	[UserFriendlyFeatureName] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
 
-ALTER TABLE [ZZ_SlappFramework].[BulkOpFeatures] ADD  CONSTRAINT [DEFAULT_BulkOpFeatures_MenuDisplayRanking]  DEFAULT ((0)) FOR [MenuDisplayRanking]
+ALTER TABLE [SqlXl].[BulkOpFeatures] ADD  CONSTRAINT [DEFAULT_BulkOpFeatures_MenuDisplayRanking]  DEFAULT ((0)) FOR [MenuDisplayRanking]
 GO
 --end BulkOpFeatures table def*********************
 
 -- Create RequestContext table to store SPECIAL runtime context variables
 -- ...(One-off vars, like logged-on userID, role, etc
 --....NOT intended for common vars from QueryString or HtmlForm)
-CREATE TABLE [ZZ_SlappFramework].[RequestContext] (
+CREATE TABLE [SqlXl].[RequestContext] (
     RequestID NVARCHAR(36) NOT NULL PRIMARY KEY,
     CtxVar001 NVARCHAR(MAX) NULL,
     CtxVar002 NVARCHAR(MAX) NULL,
@@ -1336,7 +1336,7 @@ CREATE TABLE [ZZ_SlappFramework].[RequestContext] (
 );--end create table 
 go 
 
-CREATE TABLE [ZZ_SlappFramework].[ColumnUIConfigurations](
+CREATE TABLE [SqlXl].[ColumnUIConfigurations](
     [ID] [int] IDENTITY(1,1) NOT NULL,
     [SchemaName] [nvarchar](128) NOT NULL,
     [TableName] [nvarchar](128) NOT NULL,  
@@ -1356,7 +1356,7 @@ CREATE TABLE [ZZ_SlappFramework].[ColumnUIConfigurations](
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
 
-CREATE FUNCTION [ZZ_SlappFramework].[GenerateVarDeclarations]
+CREATE FUNCTION [SqlXl].[GenerateVarDeclarations]
 (	/*Note: this func depends on table BulkOpFeatures, so it's AFTER it...*/
     @BulkOpFeaturesID INT
 )
@@ -1375,7 +1375,7 @@ BEGIN
             'DECLARE @StagingSchemaName NVARCHAR(128) = ''' + REPLACE(StagingSchemaName, '''', '''''') + ''';' + CHAR(13) + CHAR(10) +
             'DECLARE @StagingTableName NVARCHAR(128) = ''' + REPLACE(StagingTableName, '''', '''''') + ''';' + CHAR(13) + CHAR(10) +
             'DECLARE @SprocToProcessPerfectStagedData NVARCHAR(128) = ''' + REPLACE(SprocToProcessPerfectStagedData, '''', '''''') + ''';' + CHAR(13) + CHAR(10)
-    FROM [ZZ_SlappFramework].[BulkOpFeatures]
+    FROM [SqlXl].[BulkOpFeatures]
     WHERE [ID] = @BulkOpFeaturesID;
 
     -- Assign the generated declarations to the result
@@ -1385,7 +1385,7 @@ BEGIN
 END;--end func 
 GO
 
-CREATE TABLE [ZZ_SlappFramework].SavedQueries (
+CREATE TABLE [SqlXl].SavedQueries (
     ID INT IDENTITY(1,1) PRIMARY KEY,
     SavedQueryName NVARCHAR(255) NOT NULL,
     SavedQueryText NVARCHAR(MAX) NOT NULL,
@@ -1395,7 +1395,7 @@ CREATE TABLE [ZZ_SlappFramework].SavedQueries (
 go 
 
 --For debugging support...
-CREATE TABLE ZZ_SlappFramework.DebugLog (
+CREATE TABLE SqlXl.DebugLog (
     LogID INT IDENTITY(1,1) PRIMARY KEY,
 	LogTime datetime2 not null default sysutcdatetime(),
 	RequestID nvarchar(36) null,
@@ -1414,7 +1414,7 @@ View(s)...**/
 Stored Procedure(s)...**/
 
 --For debugging support...
-CREATE PROCEDURE ZZ_SlappFramework.DebugLogInsert
+CREATE PROCEDURE SqlXl.DebugLogInsert
     @RequestID NVARCHAR(36) = NULL,
     @InputParameters NVARCHAR(MAX) = NULL,
     @LogInfo NVARCHAR(MAX)
@@ -1423,7 +1423,7 @@ BEGIN
     SET NOCOUNT ON; -- Prevent extra result sets from being returned
 
     -- Insert a new row into the DebugLog table
-    INSERT INTO ZZ_SlappFramework.DebugLog (
+    INSERT INTO SqlXl.DebugLog (
         RequestID,
         InputParameters,
         LogInfo
@@ -1437,7 +1437,7 @@ END;--end sproc
 GO
 
 --region ErrorIf...validations
-CREATE PROCEDURE [ZZ_SlappFramework].[ErrorIfSchemaDoesNotExist]
+CREATE PROCEDURE [SqlXl].[ErrorIfSchemaDoesNotExist]
 	@SchemaName NVARCHAR(128)
 AS
 BEGIN
@@ -1451,7 +1451,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ErrorIfTableDoesNotExist]
+CREATE PROCEDURE [SqlXl].[ErrorIfTableDoesNotExist]
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128)
 AS
@@ -1479,7 +1479,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ErrorIfColumnDoesNotExist]
+CREATE PROCEDURE [SqlXl].[ErrorIfColumnDoesNotExist]
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
 	@ColumnName nvarchar(128)
@@ -1523,7 +1523,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ErrorIfSprocDoesNotExist]
+CREATE PROCEDURE [SqlXl].[ErrorIfSprocDoesNotExist]
     @SprocName NVARCHAR(128),
 	@SchemaName NVARCHAR(128)
 AS
@@ -1540,13 +1540,13 @@ BEGIN
 end;--end sproc 
 go 
 
-CREATE PROCEDURE ZZ_SlappFramework.ErrorIfNoIntegerPrimaryKey
+CREATE PROCEDURE SqlXl.ErrorIfNoIntegerPrimaryKey
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128)
 AS
 BEGIN
 	-- Validate that table exists
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @SchemaName, @TableName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @SchemaName, @TableName;
 
     DECLARE @PrimaryKeyColumn NVARCHAR(128);
     DECLARE @PrimaryKeyDataType NVARCHAR(128);
@@ -1601,7 +1601,7 @@ BEGIN
 END --end sproc 
 GO
 
-CREATE PROCEDURE ZZ_SlappFramework.ErrorIfNoRequestIDColumn
+CREATE PROCEDURE SqlXl.ErrorIfNoRequestIDColumn
 	@SchemaName nvarchar(128),
 	@TableName nvarchar(128)
 AS
@@ -1625,7 +1625,7 @@ BEGIN
 END --end sproc 
 GO 
 
-CREATE PROCEDURE ZZ_SlappFramework.ErrorIfColumnMismatch
+CREATE PROCEDURE SqlXl.ErrorIfColumnMismatch
 	@DomainSchemaName nvarchar(128),
 	@DomainTableName nvarchar(128),
 	@StagingSchemaName nvarchar(128),
@@ -1674,7 +1674,7 @@ BEGIN
 END --end sproc 
 GO 
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ErrorIfInvalidGuid]
+CREATE PROCEDURE [SqlXl].[ErrorIfInvalidGuid]
     @RequestID NVARCHAR(36)
 AS
 BEGIN
@@ -1687,7 +1687,7 @@ BEGIN
 end;--end sproc 
 go 
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ErrorIfNoUniqueDisplayColumn]
+CREATE PROCEDURE [SqlXl].[ErrorIfNoUniqueDisplayColumn]
     @SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128)
 AS
@@ -1695,16 +1695,16 @@ BEGIN
     SET NOCOUNT ON;
 
     -- Validate params...
-    EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @SchemaName;
-    EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @SchemaName, @TableName;
-    EXEC ZZ_SlappFramework.ErrorIfNoIntegerPrimaryKey @SchemaName, @TableName;
+    EXEC SqlXl.ErrorIfSchemaDoesNotExist @SchemaName;
+    EXEC SqlXl.ErrorIfTableDoesNotExist @SchemaName, @TableName;
+    EXEC SqlXl.ErrorIfNoIntegerPrimaryKey @SchemaName, @TableName;
 
     -- Check if table has at least one unique constraint on a non-primary-key column
     DECLARE @HasUniqueDisplayColumn BIT = 0;
     DECLARE @PrimaryKeyColumn NVARCHAR(128);
 
     -- Get the primary key column name
-    SET @PrimaryKeyColumn = ZZ_SlappFramework.GetPrimaryKeyColumnName(@SchemaName, @TableName);
+    SET @PrimaryKeyColumn = SqlXl.GetPrimaryKeyColumnName(@SchemaName, @TableName);
 
     -- Check for unique constraints on non-PK columns
     IF EXISTS (
@@ -1735,7 +1735,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ErrorOnAnyBadFeatureParameter]
+CREATE PROCEDURE [SqlXl].[ErrorOnAnyBadFeatureParameter]
 (
     @BulkOpFeatureID INT
 )
@@ -1761,7 +1761,7 @@ BEGIN
 		@SprocToProcessPerfectStagedData = [SprocToProcessPerfectStagedData],
 		@InsertUpdateDeleteOrCustom = InsertUpdateDeleteOrCustom,
 		@MenuDisplayRanking = [MenuDisplayRanking]
-	FROM [ZZ_SlappFramework].[BulkOpFeatures]
+	FROM [SqlXl].[BulkOpFeatures]
 	where ID = @BulkOpFeatureID;
 
 	--Ensure that this is Insert, Update, Delete or Custom...
@@ -1772,23 +1772,23 @@ BEGIN
 	end 
 
 	--Sanity-check the values provided in the feature...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @StagingSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfSprocDoesNotExist @SprocToProcessPerfectStagedData, @DomainSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfNoIntegerPrimaryKey @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @StagingSchemaName;
+	EXEC SqlXl.ErrorIfSprocDoesNotExist @SprocToProcessPerfectStagedData, @DomainSchemaName;
+	EXEC SqlXl.ErrorIfNoIntegerPrimaryKey @DomainSchemaName, @DomainTableName;
 
 	--Sanity-check staging table param too, if it's NOT a delete feature...
 	IF @StagingTableName <> 'NotApplicableForBulkDelete'
 	BEGIN
-		EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @StagingSchemaName, @StagingTableName;
-		exec ZZ_SlappFramework.ErrorIfNoRequestIDColumn @StagingSchemaName, @StagingTableName;
-		EXEC ZZ_SlappFramework.ErrorIfColumnMismatch @DomainSchemaName, @DomainTableName, @StagingSchemaName, @StagingTableName;	
+		EXEC SqlXl.ErrorIfTableDoesNotExist @StagingSchemaName, @StagingTableName;
+		exec SqlXl.ErrorIfNoRequestIDColumn @StagingSchemaName, @StagingTableName;
+		EXEC SqlXl.ErrorIfColumnMismatch @DomainSchemaName, @DomainTableName, @StagingSchemaName, @StagingTableName;	
 	END 
 end; --end sproc 
 go
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ErrorSelectedIdsNotAsExpected]
+CREATE PROCEDURE [SqlXl].[ErrorSelectedIdsNotAsExpected]
 	@SelectedIds NVARCHAR(MAX) -- "1,2,3,4"
 AS
 BEGIN
@@ -1818,7 +1818,7 @@ END;--end sproc
 GO
 --endregion
 
-CREATE PROCEDURE [ZZ_SlappFramework].[PurgeStagingForRequestID]
+CREATE PROCEDURE [SqlXl].[PurgeStagingForRequestID]
     @StagingTableName NVARCHAR(128),
 	@RequestID nvarchar(36)
 AS
@@ -1826,18 +1826,18 @@ BEGIN
     SET NOCOUNT ON;
 
 	--Validate params...
-	exec ZZ_SlappFramework.ErrorIfTableDoesNotExist 'ZZ_SlappFramework', @StagingTableName;
-	exec ZZ_SlappFramework.ErrorIfInvalidGuid @RequestID;
+	exec SqlXl.ErrorIfTableDoesNotExist 'SqlXl', @StagingTableName;
+	exec SqlXl.ErrorIfInvalidGuid @RequestID;
 
     DECLARE @SQLCommand NVARCHAR(MAX);
     SET @SQLCommand = 
-		'delete from ZZ_SlappFramework.' + @StagingTableName + 
+		'delete from SqlXl.' + @StagingTableName + 
 		' where RequestID = ''' + @RequestID + ''' ;';
     EXEC sp_executesql @SQLCommand;
 END; --end sproc
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ListUniqueKeyConstraintsForTable]
+CREATE PROCEDURE [SqlXl].[ListUniqueKeyConstraintsForTable]
 (
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
@@ -1850,8 +1850,8 @@ BEGIN
 	SET NOCOUNT ON;
 
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @SchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @SchemaName, @TableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @SchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @SchemaName, @TableName;
 
 	-- Declare a table variable to store constraint information
 	DECLARE @ConstraintDetails TABLE (
@@ -1919,7 +1919,7 @@ BEGIN
 end --end sproc 
 go 
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ValidateZZTemp_For_UPDATE_FEATURE_ForUniqueConstraintsReturnErrors]
+CREATE PROCEDURE [SqlXl].[ValidateZZTemp_For_UPDATE_FEATURE_ForUniqueConstraintsReturnErrors]
 (
 	@DomainSchemaName NVARCHAR(128),
     @DomainTableName NVARCHAR(128),
@@ -1933,22 +1933,22 @@ BEGIN
 	SET NOCOUNT ON;
 
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @StagingSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @StagingSchemaName, @StagingTableName;
-	exec ZZ_SlappFramework.ErrorIfInvalidGuid @RequestID;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @StagingSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @StagingSchemaName, @StagingTableName;
+	exec SqlXl.ErrorIfInvalidGuid @RequestID;
 	
 	declare @SQL nvarchar(max);
 	declare @PrimaryKeyColumnName nvarchar(128);
 
 	--Update logic needs the primary key column for domain table...
 	set @PrimaryKeyColumnName = 
-		ZZ_SlappFramework.GetPrimaryKeyColumnName(@DomainSchemaName, @DomainTableName);
+		SqlXl.GetPrimaryKeyColumnName(@DomainSchemaName, @DomainTableName);
 
 	-- Check for duplicates within zztemp of domain table's pk column...
 	set @SQL = 
-		ZZ_SlappFramework.SqlToListAllRowsFromOnlyWithinZZTempThatDuplicate_A_ValueForColumn(
+		SqlXl.SqlToListAllRowsFromOnlyWithinZZTempThatDuplicate_A_ValueForColumn(
 			@PrimaryKeyColumnName);
 	INSERT #Messages(Msg)
 	EXEC sp_executesql @SQL; 
@@ -1956,7 +1956,7 @@ BEGIN
 	--Stop and return if error max is reached...
 	if (select count(*) from #Messages) >= @StopAfterThisManyErrors
 	begin
-		EXEC [ZZ_SlappFramework].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
+		EXEC [SqlXl].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
 		
 		RETURN 0;
 	end --end if 
@@ -1968,7 +1968,7 @@ BEGIN
 		ColumnNames NVARCHAR(MAX)
 	);
 	insert @ConstraintDetails (ColumnNames)
-	exec [ZZ_SlappFramework].[ListUniqueKeyConstraintsForTable]
+	exec [SqlXl].[ListUniqueKeyConstraintsForTable]
 		@SchemaName = @DomainSchemaName,
 		@TableName = @DomainTableName,
 		@IncludePrimaryKeyColumnInResults = 0,
@@ -1992,7 +1992,7 @@ BEGIN
 
 		--Generate sql that makes an error listing for all uniqueness violations...
 		set @SQL =
-				ZZ_SlappFramework.GenerateDuplicateCheckSQL
+				SqlXl.GenerateDuplicateCheckSQL
 					(@DomainSchemaName, @DomainTableName, @ColumnNames, @PrimaryKeyColumnName);
 		
 		-- Execute the dynamic SQL
@@ -2002,7 +2002,7 @@ BEGIN
 		--Stop and return if error max is reached...
 		if (select count(*) from #Messages) >= @StopAfterThisManyErrors
 		begin
-			EXEC [ZZ_SlappFramework].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
+			EXEC [SqlXl].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
 			
 			-- Exit from both cursors cleanly
 			CLOSE ConstraintCursor;
@@ -2018,14 +2018,14 @@ BEGIN
 	DEALLOCATE ConstraintCursor;
 
 	--Clean staging table...
-	EXEC [ZZ_SlappFramework].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
+	EXEC [SqlXl].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
 
 	RETURN 0;
 end --end sproc 
 go 
 
 
-CREATE PROCEDURE [ZZ_SlappFramework].[CreateUniqueKeyConstraint]
+CREATE PROCEDURE [SqlXl].[CreateUniqueKeyConstraint]
 (
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
@@ -2034,9 +2034,9 @@ CREATE PROCEDURE [ZZ_SlappFramework].[CreateUniqueKeyConstraint]
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @SchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @SchemaName, @TableName;
-	EXEC ZZ_SlappFramework.ErrorIfColumnDoesNotExist @SchemaName, @TableName, @ColumnName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @SchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @SchemaName, @TableName;
+	EXEC SqlXl.ErrorIfColumnDoesNotExist @SchemaName, @TableName, @ColumnName;
 
     DECLARE @SQL NVARCHAR(MAX)
 	SET @SQL = N'ALTER TABLE ' + @SchemaName + '.' + @TableName + 
@@ -2046,7 +2046,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[DropTableIfExists]
+CREATE PROCEDURE [SqlXl].[DropTableIfExists]
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128)
 AS
@@ -2069,7 +2069,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[AttemptToUpdateOneSingleColumnInTheDestinationTableFromTheSourceTableAndReturnMessage] 
+CREATE PROCEDURE [SqlXl].[AttemptToUpdateOneSingleColumnInTheDestinationTableFromTheSourceTableAndReturnMessage] 
 /* This sproc is *NOT* designed to be performant or efficient
 but INSTEAD is designed to perform the most granular
 field-level validation possible.  It does this 
@@ -2127,12 +2127,12 @@ BEGIN
     SET NOCOUNT ON;
 
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @SourceSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @SourceSchemaName, @SourceTableName;
-	EXEC ZZ_SlappFramework.ErrorIfColumnDoesNotExist @SourceSchemaName, @SourceTableName, @SourceTablePrimaryKeyColumnName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DestinationSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DestinationSchemaName, @DestinationTableName;
-	EXEC ZZ_SlappFramework.ErrorIfColumnDoesNotExist @DestinationSchemaName, @DestinationTableName, @ColumnNameToUpdate;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @SourceSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @SourceSchemaName, @SourceTableName;
+	EXEC SqlXl.ErrorIfColumnDoesNotExist @SourceSchemaName, @SourceTableName, @SourceTablePrimaryKeyColumnName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DestinationSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DestinationSchemaName, @DestinationTableName;
+	EXEC SqlXl.ErrorIfColumnDoesNotExist @DestinationSchemaName, @DestinationTableName, @ColumnNameToUpdate;
 	--end param validation--
 
     declare @ValidationSQL nvarchar(max);
@@ -2178,7 +2178,7 @@ BEGIN
 END --end sproc 
 GO
 
-create PROCEDURE [ZZ_SlappFramework].[TransferData]
+create PROCEDURE [SqlXl].[TransferData]
 (
 	@SourceSchemaName NVARCHAR(128),
 	@SourceTableName NVARCHAR(128),
@@ -2189,10 +2189,10 @@ create PROCEDURE [ZZ_SlappFramework].[TransferData]
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @SourceSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @SourceSchemaName, @SourceTableName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DestinationSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DestinationSchemaName, @DestinationTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @SourceSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @SourceSchemaName, @SourceTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DestinationSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DestinationSchemaName, @DestinationTableName;
 	--end param validation--
 
     DECLARE @Columns NVARCHAR(MAX);
@@ -2214,7 +2214,7 @@ BEGIN
 END;
 GO
 
-create PROCEDURE [ZZ_SlappFramework].[TransferDataForRequestID]
+create PROCEDURE [SqlXl].[TransferDataForRequestID]
 (
 	@SourceSchemaName NVARCHAR(128),
 	@SourceTableName NVARCHAR(128),
@@ -2226,11 +2226,11 @@ create PROCEDURE [ZZ_SlappFramework].[TransferDataForRequestID]
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @SourceSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @SourceSchemaName, @SourceTableName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DestinationSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DestinationSchemaName, @DestinationTableName;
-	EXEC ZZ_SlappFramework.ErrorIfInvalidGuid @RequestID;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @SourceSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @SourceSchemaName, @SourceTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DestinationSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DestinationSchemaName, @DestinationTableName;
+	EXEC SqlXl.ErrorIfInvalidGuid @RequestID;
 	--end param validation--
 
     DECLARE @Columns NVARCHAR(MAX);
@@ -2253,7 +2253,7 @@ BEGIN
 END;--end sproc
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ProcessRawDataFromZZTemp]
+CREATE PROCEDURE [SqlXl].[ProcessRawDataFromZZTemp]
 (
 	@BulkOpsFeaturesID int,
 	@RequestID nvarchar(36),
@@ -2263,14 +2263,14 @@ AS
 BEGIN
 	IF @Debug = 1
 	BEGIN
-		exec ZZ_SlappFramework.DebugLogInsert @RequestID, '','Started procedure: ProcessRawDataFromZZTemp...';
+		exec SqlXl.DebugLogInsert @RequestID, '','Started procedure: ProcessRawDataFromZZTemp...';
 	END
 
 	--validate params...
 	-- Validate that exists for the given @BulkOpsFeaturesID
 	IF NOT EXISTS (
 		SELECT 1
-		FROM [ZZ_SlappFramework].[BulkOpFeatures]
+		FROM [SqlXl].[BulkOpFeatures]
 		WHERE [ID] = @BulkOpsFeaturesID
 	)
 	BEGIN
@@ -2278,7 +2278,7 @@ BEGIN
 		RETURN -1; -- Halt execution
 	END
 
-	EXEC ZZ_SlappFramework.ErrorIfInvalidGuid @RequestID;
+	EXEC SqlXl.ErrorIfInvalidGuid @RequestID;
 	--end param validation
 
 	-- Declare the variables
@@ -2293,12 +2293,12 @@ BEGIN
 		@StagingTableName = [StagingTableName],
 		@DomainSchemaName = [DomainSchemaName],
 		@DomainSprocNameToProcessDataFromStagingTable = [SprocToProcessPerfectStagedData]
-	FROM [ZZ_SlappFramework].[BulkOpFeatures]
+	FROM [SqlXl].[BulkOpFeatures]
 	WHERE [ID] = @BulkOpsFeaturesID;
 
 	IF @Debug = 1 and @StagingTableName is not null 
 	BEGIN
-		exec ZZ_SlappFramework.DebugLogInsert @RequestID, '','Params validated successfully.';
+		exec SqlXl.DebugLogInsert @RequestID, '','Params validated successfully.';
 	END
 
     DECLARE @SQLCommand NVARCHAR(255);
@@ -2307,14 +2307,14 @@ BEGIN
 	SET XACT_ABORT ON;--this should halt execution
 	--...and immediatly propogate the error UP
 	--...to the caller if TransferData fails.
-	EXEC ZZ_SlappFramework.TransferData @SourceSchemaName = @StagingSchemaName,      -- nvarchar(128)
+	EXEC SqlXl.TransferData @SourceSchemaName = @StagingSchemaName,      -- nvarchar(128)
 	                                @SourceTableName = N'#ZZTemp',       -- nvarchar(128)
 	                                @DestinationSchemaName = @StagingSchemaName, -- nvarchar(128)
 	                                @DestinationTableName = @StagingTableName,  -- nvarchar(128)
 	                                @ColumnsToOmit = N'ZZTemp_ID'          -- nvarchar(max)
 	IF @Debug = 1
 	BEGIN
-		exec ZZ_SlappFramework.DebugLogInsert @RequestID, '','Moved data from #ZZTemp to staging table successfully.';
+		exec SqlXl.DebugLogInsert @RequestID, '','Moved data from #ZZTemp to staging table successfully.';
 	END
 
 	/* Next block is where the domain/production table(s)
@@ -2336,22 +2336,22 @@ BEGIN
 
 		IF @Debug = 1
 		BEGIN
-			exec ZZ_SlappFramework.DebugLogInsert @RequestID, '', 'Successfully ran @DomainSprocNameToProcessDataFromStagingTable.';
+			exec SqlXl.DebugLogInsert @RequestID, '', 'Successfully ran @DomainSprocNameToProcessDataFromStagingTable.';
 		END
 
 		--Clean-up staging...
-		EXEC [ZZ_SlappFramework].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
+		EXEC [SqlXl].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
 	END TRY
 	BEGIN CATCH
 		-- If an error occurs, rollback the transaction and capture the error
 		ROLLBACK TRANSACTION;
 
 		--Clean-up staging...
-		EXEC [ZZ_SlappFramework].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
+		EXEC [SqlXl].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
 
 		IF @Debug = 1
 		BEGIN
-			exec ZZ_SlappFramework.DebugLogInsert @RequestID, '','@DomainSprocNameToProcessDataFromStagingTable failed, trans rolled back.';
+			exec SqlXl.DebugLogInsert @RequestID, '','@DomainSprocNameToProcessDataFromStagingTable failed, trans rolled back.';
 		END
 		
 		-- Ensure an error exists before THROW
@@ -2361,21 +2361,21 @@ BEGIN
 
 	IF @Debug = 1
 	BEGIN
-		exec ZZ_SlappFramework.DebugLogInsert @RequestID, '','Ended procedure: ProcessRawDataFromZZTemp.';
+		exec SqlXl.DebugLogInsert @RequestID, '','Ended procedure: ProcessRawDataFromZZTemp.';
 	END
 END;--end sproc 
 GO
 
-CREATE PROCEDURE ZZ_SlappFramework.DropColumnFromTable
+CREATE PROCEDURE SqlXl.DropColumnFromTable
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
     @ColumnName NVARCHAR(128)
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @SchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @SchemaName, @TableName;
-	EXEC ZZ_SlappFramework.ErrorIfColumnDoesNotExist @SchemaName, @TableName, @ColumnName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @SchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @SchemaName, @TableName;
+	EXEC SqlXl.ErrorIfColumnDoesNotExist @SchemaName, @TableName, @ColumnName;
 	--end param validation--
 
     -- Construct the dynamic SQL command to drop the column
@@ -2388,7 +2388,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[CreateNonAutoNumberPrimaryKey]
+CREATE PROCEDURE [SqlXl].[CreateNonAutoNumberPrimaryKey]
 (
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
@@ -2397,9 +2397,9 @@ CREATE PROCEDURE [ZZ_SlappFramework].[CreateNonAutoNumberPrimaryKey]
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @SchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @SchemaName, @TableName;
-	EXEC ZZ_SlappFramework.ErrorIfColumnDoesNotExist @SchemaName, @TableName, @ColumnName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @SchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @SchemaName, @TableName;
+	EXEC SqlXl.ErrorIfColumnDoesNotExist @SchemaName, @TableName, @ColumnName;
 	--end param validation--
 
     DECLARE @SQL NVARCHAR(MAX)
@@ -2410,7 +2410,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[CreateForeignKey]
+CREATE PROCEDURE [SqlXl].[CreateForeignKey]
 (
     @ForeignKeyConstraintName NVARCHAR(128),
 	@MainTableSchemaName NVARCHAR(128),
@@ -2423,12 +2423,12 @@ CREATE PROCEDURE [ZZ_SlappFramework].[CreateForeignKey]
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @MainTableSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @MainTableSchemaName, @MainTableName;
-	EXEC ZZ_SlappFramework.ErrorIfColumnDoesNotExist @MainTableSchemaName, @MainTableName, @MainTableForeignKeyColumnName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @ReferencedTableSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @ReferencedTableSchemaName, @ReferencedTableName;
-	EXEC ZZ_SlappFramework.ErrorIfColumnDoesNotExist @ReferencedTableSchemaName, @ReferencedTableName, @ReferencedColumnName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @MainTableSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @MainTableSchemaName, @MainTableName;
+	EXEC SqlXl.ErrorIfColumnDoesNotExist @MainTableSchemaName, @MainTableName, @MainTableForeignKeyColumnName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @ReferencedTableSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @ReferencedTableSchemaName, @ReferencedTableName;
+	EXEC SqlXl.ErrorIfColumnDoesNotExist @ReferencedTableSchemaName, @ReferencedTableName, @ReferencedColumnName;
 	--end param validation--
 
     DECLARE @SQL NVARCHAR(MAX)
@@ -2443,7 +2443,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[CreateForeignKeysOnStagingTable]
+CREATE PROCEDURE [SqlXl].[CreateForeignKeysOnStagingTable]
 (
 	@DomainSchemaName NVARCHAR(128),
 	@DomainTableName NVARCHAR(128),
@@ -2453,10 +2453,10 @@ CREATE PROCEDURE [ZZ_SlappFramework].[CreateForeignKeysOnStagingTable]
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @StagingSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @StagingSchemaName, @StagingTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @StagingSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @StagingSchemaName, @StagingTableName;
 	--end param validation--
 
     DECLARE @ForeignKey NVARCHAR(128),
@@ -2502,12 +2502,12 @@ BEGIN
     --PRINT 'ForeignKey: ' + @ForeignKey + ', ParentTable: ' + @ParentTable + ', ParentColumn: ' + @ParentColumn + ', ReferencedTable: ' + @ReferencedTable + ', ReferencedColumn: ' + @ReferencedColumn
 
 	-- Ensure a display column exists in the referenced table (for dropdown listings, for example)...
-	EXEC ZZ_SlappFramework.ErrorIfNoUniqueDisplayColumn @DomainSchemaName, @ReferencedTable;
+	EXEC SqlXl.ErrorIfNoUniqueDisplayColumn @DomainSchemaName, @ReferencedTable;
 
     --Name FK constraint per staging table name...
     set @ForeignKey = 'FK_' + @StagingTableName + '_' + @ReferencedColumn + '_' + @ReferencedTable;
     
-    EXEC [ZZ_SlappFramework].[CreateForeignKey] @ForeignKeyConstraintName = @ForeignKey, -- nvarchar(128)
+    EXEC [SqlXl].[CreateForeignKey] @ForeignKeyConstraintName = @ForeignKey, -- nvarchar(128)
                                             @MainTableSchemaName = @StagingSchemaName, -- nvarchar(128)
                                             @MainTableName = @StagingTableName, -- nvarchar(128)
                                             @MainTableForeignKeyColumnName = @ParentColumn, -- nvarchar(128)
@@ -2526,7 +2526,7 @@ DEALLOCATE ForeignKeyCursor
 END;
 GO
 
-CREATE PROCEDURE ZZ_SlappFramework.AddCheckConstraint
+CREATE PROCEDURE SqlXl.AddCheckConstraint
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
     @ConstraintName NVARCHAR(128),
@@ -2534,8 +2534,8 @@ CREATE PROCEDURE ZZ_SlappFramework.AddCheckConstraint
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @SchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @SchemaName, @TableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @SchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @SchemaName, @TableName;
 	--end param validation--
 
     DECLARE @SQL NVARCHAR(MAX);
@@ -2550,7 +2550,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[CreateCheckConstraintsOnStagingTable]
+CREATE PROCEDURE [SqlXl].[CreateCheckConstraintsOnStagingTable]
 (	
 	@DomainSchemaName NVARCHAR(128),
 	@DomainTableName NVARCHAR(128),
@@ -2560,10 +2560,10 @@ CREATE PROCEDURE [ZZ_SlappFramework].[CreateCheckConstraintsOnStagingTable]
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @StagingSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @StagingSchemaName, @StagingTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @StagingSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @StagingSchemaName, @StagingTableName;
 	--end param validation--
 
     -- Declaring variables to hold data for each row
@@ -2603,7 +2603,7 @@ BEGIN
         set @Constraint_Name = 'Check_' + @StagingTableName + '_' + @Column_Name;
 
         --Add check constraint to staging table...
-        EXEC ZZ_SlappFramework.AddCheckConstraint @SchemaName = @StagingSchemaName,     -- nvarchar(128)
+        EXEC SqlXl.AddCheckConstraint @SchemaName = @StagingSchemaName,     -- nvarchar(128)
                                               @TableName = @StagingTableName,      -- nvarchar(128)
                                               @ConstraintName = @Constraint_Name, -- nvarchar(128)
                                               @CheckClause = @Check_Clause  -- nvarchar(max)
@@ -2618,7 +2618,7 @@ BEGIN
 END;
 GO
 
-Create PROCEDURE [ZZ_SlappFramework].[ReScaffoldAStagingTable]
+Create PROCEDURE [SqlXl].[ReScaffoldAStagingTable]
 (
 	@DomainSchemaName NVARCHAR(128),
     @DomainTableName NVARCHAR(128),
@@ -2631,10 +2631,10 @@ BEGIN
     SET NOCOUNT ON;
 
 	--Lite sanity-checks/param validation...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @StagingSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfNoIntegerPrimaryKey @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @StagingSchemaName;
+	EXEC SqlXl.ErrorIfNoIntegerPrimaryKey @DomainSchemaName, @DomainTableName;
 	                                                 
 	-- Propose a staging table name based on whether 
 	-- the staging table will hold rows for inserts or updates...
@@ -2645,41 +2645,41 @@ BEGIN
 	END
 	IF @InsertOrUpdate = 'insert'
 	BEGIN
-		SET @StagingTableName = ZZ_SlappFramework.ProposeStagingTableNameForInsertFeature(@DomainTableName);
+		SET @StagingTableName = SqlXl.ProposeStagingTableNameForInsertFeature(@DomainTableName);
 	END 
 	ELSE	
 	BEGIN
-		SET @StagingTableName = ZZ_SlappFramework.ProposeStagingTableNameForUpdateFeature(@DomainTableName);
+		SET @StagingTableName = SqlXl.ProposeStagingTableNameForUpdateFeature(@DomainTableName);
 	END 
 
 	DECLARE @SQL NVARCHAR(MAX);
 
-    EXEC ZZ_SlappFramework.DropTableIfExists @SchemaName = @StagingSchemaName, -- nvarchar(128)
+    EXEC SqlXl.DropTableIfExists @SchemaName = @StagingSchemaName, -- nvarchar(128)
                                          @TableName = @StagingTableName   -- nvarchar(128)
     
     -- Build dynamic SQL to create the staging table, 
 	-- based on the structure of the domain table...
-	set @SQL = [ZZ_SlappFramework].[GenerateCreateStagingTableSQLWith_NO_IdentityProperty]
+	set @SQL = [SqlXl].[GenerateCreateStagingTableSQLWith_NO_IdentityProperty]
 					(@DomainSchemaName, @DomainTableName, 
 						@StagingSchemaName, @StagingTableName);
     EXEC sp_executesql @SQL;
 
     --Create foreign keys on staging table...
-	EXEC [ZZ_SlappFramework].[CreateForeignKeysOnStagingTable] @DomainSchemaName = @DomainSchemaName,  -- nvarchar(128)
+	EXEC [SqlXl].[CreateForeignKeysOnStagingTable] @DomainSchemaName = @DomainSchemaName,  -- nvarchar(128)
 	                                                       @DomainTableName = @DomainTableName,   -- nvarchar(128)
 	                                                       @StagingSchemaName = @StagingSchemaName, -- nvarchar(128)
 	                                                       @StagingTableName = @StagingTableName   -- nvarchar(128)
 	
 
     --Create check constraints on staging table...
-    exec [ZZ_SlappFramework].[CreateCheckConstraintsOnStagingTable] @DomainSchemaName = @DomainSchemaName,  -- nvarchar(128)
+    exec [SqlXl].[CreateCheckConstraintsOnStagingTable] @DomainSchemaName = @DomainSchemaName,  -- nvarchar(128)
 	                                                       @DomainTableName = @DomainTableName,   -- nvarchar(128)
 	                                                       @StagingSchemaName = @StagingSchemaName, -- nvarchar(128)
 	                                                       @StagingTableName = @StagingTableName   -- nvarchar(128)
 
 	--Generate a sql script that will add
 	--unique key constraints from Domain table to StagingTable...
-	set @SQL = ZZ_SlappFramework.GenerateUniqueConstraintSQL(@DomainSchemaName,@DomainTableName,@StagingSchemaName,@StagingTableName);
+	set @SQL = SqlXl.GenerateUniqueConstraintSQL(@DomainSchemaName,@DomainTableName,@StagingSchemaName,@StagingTableName);
 
 	--print @SQL; --test/debug
 	EXEC sp_executesql @SQL;
@@ -2688,10 +2688,10 @@ BEGIN
 	begin
 		--Drop any identity/autogenerated cols from this 
 		-- newly created table, if present...
-		declare @IdColName nvarchar(256) = ZZ_SlappFramework.GetIdentityColumnName(@DomainSchemaName, @DomainTableName);
+		declare @IdColName nvarchar(256) = SqlXl.GetIdentityColumnName(@DomainSchemaName, @DomainTableName);
 		if @IdColName is not NULL
 		BEGIN
-			EXEC ZZ_SlappFramework.DropColumnFromTable @SchemaName = @StagingSchemaName, -- nvarchar(128)
+			EXEC SqlXl.DropColumnFromTable @SchemaName = @StagingSchemaName, -- nvarchar(128)
 													@TableName = @StagingTableName,  -- nvarchar(128)
 													@ColumnName = @IdColName -- nvarchar(128)
 		end;--end if 
@@ -2700,7 +2700,7 @@ BEGIN
 END;--end sproc 
 go 
 
-CREATE PROCEDURE ZZ_SlappFramework.UpdateDestinationTableFromSourceTableForRequestID
+CREATE PROCEDURE SqlXl.UpdateDestinationTableFromSourceTableForRequestID
 	@SourceSchemaName NVARCHAR(128),
     @SourceTableName NVARCHAR(128),
 	@DestinationSchemaName NVARCHAR(128),
@@ -2711,16 +2711,16 @@ CREATE PROCEDURE ZZ_SlappFramework.UpdateDestinationTableFromSourceTableForReque
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @SourceSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @SourceSchemaName, @SourceTableName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DestinationSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DestinationSchemaName, @DestinationTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @SourceSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @SourceSchemaName, @SourceTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DestinationSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DestinationSchemaName, @DestinationTableName;
 
 	-- Note: Same PrimaryKeyColumnName is expected in *BOTH* source and destination tables...
-	EXEC ZZ_SlappFramework.ErrorIfColumnDoesNotExist @SourceSchemaName, @SourceTableName, @PrimaryKeyColumnName;
-	EXEC ZZ_SlappFramework.ErrorIfColumnDoesNotExist @DestinationSchemaName, @DestinationTableName, @PrimaryKeyColumnName;
+	EXEC SqlXl.ErrorIfColumnDoesNotExist @SourceSchemaName, @SourceTableName, @PrimaryKeyColumnName;
+	EXEC SqlXl.ErrorIfColumnDoesNotExist @DestinationSchemaName, @DestinationTableName, @PrimaryKeyColumnName;
 
-	EXEC ZZ_SlappFramework.ErrorIfInvalidGuid @RequestID;
+	EXEC SqlXl.ErrorIfInvalidGuid @RequestID;
 	--end param validation--
 
     SET NOCOUNT ON;
@@ -2752,14 +2752,14 @@ BEGIN
 END; --end sproc 
 go 
 
-CREATE PROCEDURE [ZZ_SlappFramework].[DropZZTempAndPurgeStaging]
+CREATE PROCEDURE [SqlXl].[DropZZTempAndPurgeStaging]
     @PermanentStagingTableName NVARCHAR(128),
 	@RequestID nvarchar(36)
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist 'ZZ_SlappFramework', @PermanentStagingTableName;
-	EXEC ZZ_SlappFramework.ErrorIfInvalidGuid @RequestID;
+	EXEC SqlXl.ErrorIfTableDoesNotExist 'SqlXl', @PermanentStagingTableName;
+	EXEC SqlXl.ErrorIfInvalidGuid @RequestID;
 	--end param validation
 
     SET NOCOUNT ON;
@@ -2767,14 +2767,14 @@ BEGIN
     DECLARE @SQLCommand NVARCHAR(MAX);
 
 	--Drop table ZZTemp, and delete ALL records from staging table...
-    IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[ZZ_SlappFramework].[#ZZTemp]') AND type in (N'U'))
-        DROP TABLE [ZZ_SlappFramework].[#ZZTemp];
+    IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[SqlXl].[#ZZTemp]') AND type in (N'U'))
+        DROP TABLE [SqlXl].[#ZZTemp];
 
-	EXEC [ZZ_SlappFramework].[PurgeStagingForRequestID] @PermanentStagingTableName, @RequestID;
+	EXEC [SqlXl].[PurgeStagingForRequestID] @PermanentStagingTableName, @RequestID;
 END; --end sproc
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[RefreshMetaDataForTable]
+CREATE PROCEDURE [SqlXl].[RefreshMetaDataForTable]
 (
 	@DomainSchemaName NVARCHAR(128),
     @DomainTableName NVARCHAR(128)
@@ -2782,8 +2782,8 @@ CREATE PROCEDURE [ZZ_SlappFramework].[RefreshMetaDataForTable]
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
 	--end param validation
 
     SET NOCOUNT ON;
@@ -2860,13 +2860,13 @@ BEGIN
 	***************************************/
 
 	--Purge meta data for given table...
-	delete from ZZ_SlappFramework.Meta_Columns 
+	delete from SqlXl.Meta_Columns 
 		where SchemaName = @DomainSchemaName
 			and TableName = @DomainTableName
 	; --end delete 
 
 	--Initialize meta data for given table...
-	INSERT INTO [ZZ_SlappFramework].[Meta_Columns]
+	INSERT INTO [SqlXl].[Meta_Columns]
 	([SchemaName]
 	,[TableName]
 	,[ColumnName]
@@ -2929,7 +2929,7 @@ BEGIN
 		AND tp.name = @DomainTableName;
 
 	--Update the meta table to set foreign key details that were just collected...
-	update ZZ_SlappFramework.Meta_Columns
+	update SqlXl.Meta_Columns
 		set
 
 		--Lookup foreign key columns in the #TempForeignKeyDetails table...
@@ -2952,19 +2952,19 @@ BEGIN
     DROP TABLE #TempForeignKeyDetails;
 
 	--Make scalar select statements resulting in valid and invalid values...
-	update ZZ_SlappFramework.Meta_Columns 
+	update SqlXl.Meta_Columns 
 		set 
 			ValidValueSelectStatement = 
 							CASE  
 								WHEN IsForeignKey = 'YES' THEN 'select top 1 ' + ReferencedColumn + ' from ' + ReferencedTable + ''
 								WHEN SqlDataType like 'date%' THEN 'select getdate()' 
-								ELSE 'select ZZ_SlappFramework.CreateNonForeignKeySampleValue(''' + SqlDataType + ''',' + convert(nvarchar, isnull(MaxLengthForString,0)) + ')'
+								ELSE 'select SqlXl.CreateNonForeignKeySampleValue(''' + SqlDataType + ''',' + convert(nvarchar, isnull(MaxLengthForString,0)) + ')'
 							   END,
 
 			InvalidValueSelectStatement = 
 							CASE  
 								WHEN IsForeignKey = 'YES' THEN 'select -1 '
-								ELSE 'select ZZ_SlappFramework.CreateInvalidNonForeignKeySampleValue(''' + SqlDataType + ''')'
+								ELSE 'select SqlXl.CreateInvalidNonForeignKeySampleValue(''' + SqlDataType + ''')'
 							   END
 	where 
 		SchemaName = @DomainSchemaName 
@@ -2974,7 +2974,7 @@ BEGIN
 END;--end sproc 
 go
 
-CREATE PROCEDURE ZZ_SlappFramework.ExecuteDynamicScalarSelect
+CREATE PROCEDURE SqlXl.ExecuteDynamicScalarSelect
     @SqlScalarSelect nvarchar(max),
     @Result nvarchar(max) OUTPUT
 AS
@@ -2994,7 +2994,7 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[RefreshSampleValues]
+CREATE PROCEDURE [SqlXl].[RefreshSampleValues]
 (
 	@DomainSchemaName NVARCHAR(128),
     @DomainTableName NVARCHAR(128)
@@ -3002,8 +3002,8 @@ CREATE PROCEDURE [ZZ_SlappFramework].[RefreshSampleValues]
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
 	--end param validation
 
     SET NOCOUNT ON;
@@ -3017,7 +3017,7 @@ BEGIN
 	--Enumerate records from Meta_Columns for given table...
 	DECLARE column_cursor CURSOR FOR
 	SELECT ColumnName, ValidValueSelectStatement, InvalidValueSelectStatement
-	FROM [ZZ_SlappFramework].[Meta_Columns]
+	FROM [SqlXl].[Meta_Columns]
 	where SchemaName = @DomainSchemaName
 	and TableName = @DomainTableName
 
@@ -3028,11 +3028,11 @@ BEGIN
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
 		--Use special sproc to run the sql select statement, assign the scalar result...
-		EXEC ZZ_SlappFramework.ExecuteDynamicScalarSelect @ValidValueSelectStatement, @ValidValueScalarSelectResult OUTPUT;
-		EXEC ZZ_SlappFramework.ExecuteDynamicScalarSelect @InvalidValueSelectStatement, @InvalidValueScalarSelectResult OUTPUT;
+		EXEC SqlXl.ExecuteDynamicScalarSelect @ValidValueSelectStatement, @ValidValueScalarSelectResult OUTPUT;
+		EXEC SqlXl.ExecuteDynamicScalarSelect @InvalidValueSelectStatement, @InvalidValueScalarSelectResult OUTPUT;
 
 		--Update the 2 sample value columns...
-		update ZZ_SlappFramework.Meta_Columns 
+		update SqlXl.Meta_Columns 
 			set ValidSampleValue = @ValidValueScalarSelectResult
 			,InvalidSampleValue = @InvalidValueScalarSelectResult
 		where 
@@ -3048,7 +3048,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[InsertSingleValidSampleRowToStagingGivenTheRealProdTableName]
+CREATE PROCEDURE [SqlXl].[InsertSingleValidSampleRowToStagingGivenTheRealProdTableName]
 (
 	@DomainSchemaName nvarchar(128),
 	@DomainTableName nvarchar(128),
@@ -3059,11 +3059,11 @@ CREATE PROCEDURE [ZZ_SlappFramework].[InsertSingleValidSampleRowToStagingGivenTh
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @StagingSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @StagingSchemaName, @StagingTableName;
-	EXEC ZZ_SlappFramework.ErrorIfInvalidGuid @RequestID;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @StagingSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @StagingSchemaName, @StagingTableName;
+	EXEC SqlXl.ErrorIfInvalidGuid @RequestID;
 	--end param validation
 
     SET NOCOUNT ON;
@@ -3072,20 +3072,20 @@ BEGIN
 	--Refresh sample values...
 	--This especially matters for generating foreign key values
 	--because they must be based on current values in related tables...
-	EXEC ZZ_SlappFramework.RefreshSampleValues @DomainSchemaName, -- nvarchar(128)
+	EXEC SqlXl.RefreshSampleValues @DomainSchemaName, -- nvarchar(128)
 	                                       @DomainTableName
 	
 	--Create and run an insert statement that writes 
 	--a single valid row to the staging table.
 	--Sample values are provided by the Meta_Columns table...
-	SET @SQL = ZZ_SlappFramework.GenerateSqlToInsert_a_SingleValidSampleRowToStagingTable(
+	SET @SQL = SqlXl.GenerateSqlToInsert_a_SingleValidSampleRowToStagingTable(
 		@DomainSchemaName,@DomainTableName,@StagingSchemaName,@StagingTableName,@RequestID);
     EXEC sp_executesql @SQL;
 
 	-- Check if exactly one row was inserted
     IF @@ROWCOUNT != 1
     BEGIN
-        RAISERROR('[ZZ_SlappFramework].[InsertSingleValidSampleRowToStagingGivenTheRealProdTableName] failed to insert exactly one row.', 16, 1);
+        RAISERROR('[SqlXl].[InsertSingleValidSampleRowToStagingGivenTheRealProdTableName] failed to insert exactly one row.', 16, 1);
 		RETURN -1;  -- Return -1 to indicate an error condition
     END
 
@@ -3112,14 +3112,14 @@ BEGIN
     ELSE
     BEGIN
         -- Default to using what is provided by the framework...
-        SET @SQL = ZZ_SlappFramework.[GenerateSqlToInsert_a_SingleValidSampleRowToStagingTable](@DomainSchemaName,@DomainTableName,@StagingSchemaName,@StagingTableName,@RequestID);
+        SET @SQL = SqlXl.[GenerateSqlToInsert_a_SingleValidSampleRowToStagingTable](@DomainSchemaName,@DomainTableName,@StagingSchemaName,@StagingTableName,@RequestID);
         EXEC sp_executesql @SQL;
     END 
 	*************/
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[GenerateTestData]
+CREATE PROCEDURE [SqlXl].[GenerateTestData]
 (
 	@DomainSchemaName NVARCHAR(128),
 	@DomainTableName NVARCHAR(128),
@@ -3130,11 +3130,11 @@ CREATE PROCEDURE [ZZ_SlappFramework].[GenerateTestData]
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist 'ZZ_SlappFramework';
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist 'ZZ_SlappFramework', @StagingTableName;
-	EXEC ZZ_SlappFramework.ErrorIfInvalidGuid @RequestID;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist 'SqlXl';
+	EXEC SqlXl.ErrorIfTableDoesNotExist 'SqlXl', @StagingTableName;
+	EXEC SqlXl.ErrorIfInvalidGuid @RequestID;
 	--end param validation
 
 	-- Error if invalid number of rows desired...
@@ -3145,12 +3145,12 @@ BEGIN
     END
 
 	--Purge staging table...
-	EXEC ZZ_SlappFramework.DropZZTempAndPurgeStaging @StagingTableName, @RequestID
+	EXEC SqlXl.DropZZTempAndPurgeStaging @StagingTableName, @RequestID
 	
 	--Insert single seed row into staging table...
-	EXEC ZZ_SlappFramework.InsertSingleValidSampleRowToStagingGivenTheRealProdTableName @DomainSchemaName = @DomainSchemaName, -- nvarchar(128)
+	EXEC SqlXl.InsertSingleValidSampleRowToStagingGivenTheRealProdTableName @DomainSchemaName = @DomainSchemaName, -- nvarchar(128)
 	                                                                                @DomainTableName = @DomainTableName,  -- nvarchar(128)
-	                                                                                @StagingSchemaName = N'ZZ_SlappFramework', -- nvarchar(128)
+	                                                                                @StagingSchemaName = N'SqlXl', -- nvarchar(128)
 																					@StagingTableName = @StagingTableName,
 																					@RequestID = @RequestID
 
@@ -3159,7 +3159,7 @@ BEGIN
     DECLARE @Query NVARCHAR(MAX) = 
 		'WITH RecursiveCTE AS (
 			SELECT *
-			FROM ZZ_SlappFramework.' + QUOTENAME(@StagingTableName) + '
+			FROM SqlXl.' + QUOTENAME(@StagingTableName) + '
 			UNION ALL
 			SELECT *
 			FROM RecursiveCTE
@@ -3172,15 +3172,15 @@ BEGIN
 	--return that last query result to caller.
 	
 	--Clean-up staging...
-	exec ZZ_SlappFramework.DropZZTempAndPurgeStaging @StagingTableName, @RequestID;
+	exec SqlXl.DropZZTempAndPurgeStaging @StagingTableName, @RequestID;
 END; --end sproc 
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[PrintScriptToDropAllZZ_SlappFrameworkObjects]
+CREATE PROCEDURE [SqlXl].[PrintScriptToDropAllSqlXlObjects]
 AS
 BEGIN
 
-DECLARE @SchemaName NVARCHAR(128) = 'ZZ_SlappFramework';
+DECLARE @SchemaName NVARCHAR(128) = 'SqlXl';
 
 DECLARE @sql NVARCHAR(MAX) = '';
 
@@ -3251,19 +3251,19 @@ PRINT @sql;
 END;--end sproc 
 GO 
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ScaffoldAn_INSERT_Feature]
+CREATE PROCEDURE [SqlXl].[ScaffoldAn_INSERT_Feature]
 (
     @DomainSchemaName nvarchar(128),
 	@DomainTableName nvarchar(128),
-	@StagingSchemaName nvarchar(128) = 'ZZ_SlappFramework'
+	@StagingSchemaName nvarchar(128) = 'SqlXl'
 )
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @StagingSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfNoIntegerPrimaryKey @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @StagingSchemaName;
+	EXEC SqlXl.ErrorIfNoIntegerPrimaryKey @DomainSchemaName, @DomainTableName;
 	--end param validation
 
 	declare @SQL nvarchar(max) = '';
@@ -3272,24 +3272,24 @@ BEGIN
 	declare @SprocToProcessPerfectStagedData nvarchar(128) = '';
 	DECLARE @ProdTablePrimaryKeyColumnName nvarchar(128) = '';
 	declare @GetRowsToEdit_SelectStatement nvarchar(max) =
-		ZZ_SlappFramework.GenerateSelectStatementToResultInOneValidRow(@DomainSchemaName, @DomainTableName);
+		SqlXl.GenerateSelectStatementToResultInOneValidRow(@DomainSchemaName, @DomainTableName);
 
 	set @UserFriendlyFeatureName = 'Add ' + @DomainTableName + ' - Bulk Grid';
 
 	-- Make a staging table name like 'Staging_MyTable001' for example...
-	SET @StagingTableName = ZZ_SlappFramework.ProposeStagingTableNameForInsertFeature(@DomainTableName);
-	EXEC ZZ_SlappFramework.ReScaffoldAStagingTable @DomainSchemaName,  -- nvarchar(128)
+	SET @StagingTableName = SqlXl.ProposeStagingTableNameForInsertFeature(@DomainTableName);
+	EXEC SqlXl.ReScaffoldAStagingTable @DomainSchemaName,  -- nvarchar(128)
 	                                           @DomainTableName,   -- nvarchar(128)
 	                                           @StagingSchemaName, -- nvarchar(128)
 	                                           @InsertOrUpdate = 'insert'     -- nvarchar(6)
 	
 	--Create/Refresh meta data and sample values for given table and staging table...
-	EXEC ZZ_SlappFramework.RefreshMetaDataForTable @DomainSchemaName, @DomainTableName;
-	EXEC ZZ_SlappFramework.RefreshMetaDataForTable @StagingSchemaName, @StagingTableName;
-	EXEC ZZ_SlappFramework.RefreshSampleValues @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.RefreshMetaDataForTable @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.RefreshMetaDataForTable @StagingSchemaName, @StagingTableName;
+	EXEC SqlXl.RefreshSampleValues @DomainSchemaName, @DomainTableName;
 		
 	--Lookup production table's primary key column name...
-	set @ProdTablePrimaryKeyColumnName = ZZ_SlappFramework.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName);
+	set @ProdTablePrimaryKeyColumnName = SqlXl.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName);
 	
 	--Create a sproc to insert from staging into production table...
 	SET @SQL = 
@@ -3302,7 +3302,7 @@ BEGIN
 			-- The following logic may likely be replaced with something like
 			-- INSERT Persons(...) SELECT...FROM Staging_Persons;
 			-- instead of using this generic TransferDataForRequestID sproc...
-			EXEC [ZZ_SlappFramework].[TransferDataForRequestID]
+			EXEC [SqlXl].[TransferDataForRequestID]
 				@SourceSchemaName = N''' + @StagingSchemaName + ''',
 				@SourceTableName = N''' + @StagingTableName + ''',
 				@DestinationSchemaName = N''' + @DomainSchemaName + ''',
@@ -3327,7 +3327,7 @@ BEGIN
 	set @SprocToProcessPerfectStagedData = @DomainTableName + '_InsertFromStaging';
 
 	--Insert a record for this newly created feature...
-	INSERT ZZ_SlappFramework.BulkOpFeatures
+	INSERT SqlXl.BulkOpFeatures
 	(
 	    UserFriendlyFeatureName,
 		InsertUpdateDeleteOrCustom,
@@ -3352,7 +3352,7 @@ BEGIN
 	);--end insert 
 
 	--Insert UI support for any FK columns...
-	INSERT INTO [ZZ_SlappFramework].[ColumnUIConfigurations]	
+	INSERT INTO [SqlXl].[ColumnUIConfigurations]	
 			([SchemaName]
 			,[TableName]
 			,[ColumnName]
@@ -3362,17 +3362,17 @@ BEGIN
 		[SchemaName] = @DomainSchemaName
 		,[TableName] = @DomainTableName
 		,[ColumnName] = Meta_Columns.ColumnName
-		,[DropdownSelectStatement] = [ZZ_SlappFramework].[GenerateDropdownQueryFromReferencedTable](ReferencedTable)
+		,[DropdownSelectStatement] = [SqlXl].[GenerateDropdownQueryFromReferencedTable](ReferencedTable)
 		,[UIHint] = 'select2_client'
 	from
-		ZZ_SlappFramework.Meta_Columns
+		SqlXl.Meta_Columns
 	where
 		IsForeignKey = 'YES'
 		and SchemaName = @DomainSchemaName
 		and TableName = @DomainTableName
 		AND NOT EXISTS ( --<<only insert if this column config does not already exist
 			SELECT 1
-			FROM [ZZ_SlappFramework].[ColumnUIConfigurations] existing
+			FROM [SqlXl].[ColumnUIConfigurations] existing
 			WHERE existing.SchemaName = @DomainSchemaName
 			AND existing.TableName = @DomainTableName
 			AND existing.ColumnName = Meta_Columns.ColumnName
@@ -3383,19 +3383,19 @@ end; --end sproc
 
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ScaffoldAn_UPDATE_Feature]
+CREATE PROCEDURE [SqlXl].[ScaffoldAn_UPDATE_Feature]
 (
     @DomainSchemaName nvarchar(128),
 	@DomainTableName nvarchar(128),
-	@StagingSchemaName nvarchar(128) = 'ZZ_SlappFramework'
+	@StagingSchemaName nvarchar(128) = 'SqlXl'
 )
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @StagingSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfNoIntegerPrimaryKey @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @StagingSchemaName;
+	EXEC SqlXl.ErrorIfNoIntegerPrimaryKey @DomainSchemaName, @DomainTableName;
 
 	DECLARE @SQL NVARCHAR(MAX) = '';
 	DECLARE @UserFriendlyFeatureName NVARCHAR(255) = '';
@@ -3405,16 +3405,16 @@ BEGIN
 	SET @UserFriendlyFeatureName = 'Edit ' + @DomainTableName + ' - Find & Edit';
 
 	-- Make a staging table name like 'Staging_MyTable001' for example...
-	SET @StagingTableName = ZZ_SlappFramework.ProposeStagingTableNameForUpdateFeature(@DomainTableName);
-	EXEC ZZ_SlappFramework.ReScaffoldAStagingTable @DomainSchemaName,  -- nvarchar(128)
+	SET @StagingTableName = SqlXl.ProposeStagingTableNameForUpdateFeature(@DomainTableName);
+	EXEC SqlXl.ReScaffoldAStagingTable @DomainSchemaName,  -- nvarchar(128)
 	                                           @DomainTableName,   -- nvarchar(128)
-	                                           @StagingSchemaName = N'ZZ_SlappFramework', -- nvarchar(128)
+	                                           @StagingSchemaName = N'SqlXl', -- nvarchar(128)
 	                                           @InsertOrUpdate = N'update'     -- nvarchar(6)
 
 	--Create/Refresh meta data and sample values for given table and staging table...
-	EXEC ZZ_SlappFramework.RefreshMetaDataForTable @DomainSchemaName, @DomainTableName;
-	EXEC ZZ_SlappFramework.RefreshMetaDataForTable @StagingSchemaName, @StagingTableName;
-	EXEC ZZ_SlappFramework.RefreshSampleValues @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.RefreshMetaDataForTable @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.RefreshMetaDataForTable @StagingSchemaName, @StagingTableName;
+	EXEC SqlXl.RefreshSampleValues @DomainSchemaName, @DomainTableName;
 	
 	--Create a sproc to update production table given perfect staging data...
 	SET @SQL = 
@@ -3424,13 +3424,13 @@ BEGIN
 		BEGIN
 			SET NOCOUNT ON;
 
-			EXEC [ZZ_SlappFramework].[UpdateDestinationTableFromSourceTableForRequestID]
+			EXEC [SqlXl].[UpdateDestinationTableFromSourceTableForRequestID]
 				@SourceSchemaName = N''' + @StagingSchemaName + ''',
 				@SourceTableName = N''' + @StagingTableName + ''',
 				@DestinationSchemaName = N''' + @DomainSchemaName + ''',
 				@DestinationTableName = N''' + @DomainTableName + ''',
-				@PrimaryKeyColumnName = N''' + ZZ_SlappFramework.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName) + ''',
-				@CommaDelimitedColumnsToOmit = N''' + ZZ_SlappFramework.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName) + ''',
+				@PrimaryKeyColumnName = N''' + SqlXl.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName) + ''',
+				@CommaDelimitedColumnsToOmit = N''' + SqlXl.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName) + ''',
 				--@CommaDelimitedColumnsToOmit = N''FirstColumnToOmit,SecondColumnToOmit,ThirdColEtc''
 				@RequestID = @RequestID  
 
@@ -3455,11 +3455,11 @@ BEGIN
 		'/******' + nchar(10) +
 		'Note: You will likely want to customize this query, per requirements.' + nchar(10) +
 		'********/' + nchar(10) +
-		ZZ_SlappFramework.[GenerateSelectStatementToSupportBulkEditingWithFKs](
+		SqlXl.[GenerateSelectStatementToSupportBulkEditingWithFKs](
 			@DomainSchemaName, @DomainTableName); 
 	
 	--Insert a record for this newly created feature...
-	INSERT ZZ_SlappFramework.BulkOpFeatures
+	INSERT SqlXl.BulkOpFeatures
 	(
 	    UserFriendlyFeatureName,
 		InsertUpdateDeleteOrCustom,
@@ -3489,7 +3489,7 @@ BEGIN
 	    20 -- MenuDisplayRanking - int
 	);--end insert
 
-	INSERT INTO [ZZ_SlappFramework].[ColumnUIConfigurations]
+	INSERT INTO [SqlXl].[ColumnUIConfigurations]
            ([SchemaName]
            ,[TableName]
            ,[ColumnName]
@@ -3499,17 +3499,17 @@ BEGIN
 		[SchemaName] = @DomainSchemaName
         ,[TableName] = @DomainTableName
         ,[ColumnName] = Meta_Columns.ColumnName
-        ,[DropdownSelectStatement] = [ZZ_SlappFramework].[GenerateDropdownQueryFromReferencedTable](ReferencedTable)
+        ,[DropdownSelectStatement] = [SqlXl].[GenerateDropdownQueryFromReferencedTable](ReferencedTable)
         ,[UIHint] = 'select2_client'
 	from
-		ZZ_SlappFramework.Meta_Columns
+		SqlXl.Meta_Columns
 	where
 		IsForeignKey = 'YES'
 		and SchemaName = @DomainSchemaName
 		and TableName = @DomainTableName
 		AND NOT EXISTS ( --<<only insert if this column config does not already exist
 			SELECT 1
-			FROM [ZZ_SlappFramework].[ColumnUIConfigurations] existing
+			FROM [SqlXl].[ColumnUIConfigurations] existing
 			WHERE existing.SchemaName = @DomainSchemaName
 			AND existing.TableName = @DomainTableName
 			AND existing.ColumnName = Meta_Columns.ColumnName
@@ -3523,7 +3523,7 @@ BEGIN
 
 	-- Check if table has foreign keys
 	IF EXISTS (
-		SELECT 1 FROM ZZ_SlappFramework.Meta_Columns
+		SELECT 1 FROM SqlXl.Meta_Columns
 		WHERE IsForeignKey = 'YES'
 		AND SchemaName = @DomainSchemaName
 		AND TableName = @DomainTableName
@@ -3536,7 +3536,7 @@ BEGIN
 	IF @HasForeignKeys = 1
 	BEGIN
 		-- Generate view SQL using the existing function
-		SET @ViewSQL = [ZZ_SlappFramework].[GenerateDisplayViewSQL](@DomainSchemaName, @DomainTableName);
+		SET @ViewSQL = [SqlXl].[GenerateDisplayViewSQL](@DomainSchemaName, @DomainTableName);
 		SET @ViewName = 'vw_' + @DomainTableName;
 
 		-- Only create view if it doesn't already exist
@@ -3548,7 +3548,7 @@ BEGIN
 
 		-- OVERWRITE the GetRowsToChooseFrom_SelectStatement with
 		-- "select * from vw_TableName" since we need the related FK data...
-		UPDATE ZZ_SlappFramework.BulkOpFeatures
+		UPDATE SqlXl.BulkOpFeatures
 		SET GetRowsToChooseFrom_SelectStatement =
 			'/******' + nchar(10) +
 			'Note: You will likely want to customize this query, per requirements.' + nchar(10) +
@@ -3562,7 +3562,7 @@ BEGIN
 end; --end sproc 
 GO
 
---CREATE PROCEDURE [ZZ_SlappFramework].[ScaffoldA_DELETE_Feature]
+--CREATE PROCEDURE [SqlXl].[ScaffoldA_DELETE_Feature]
 --(
 --    @DomainSchemaName nvarchar(128),
 --	@DomainTableName nvarchar(128)
@@ -3570,9 +3570,9 @@ GO
 --AS
 --BEGIN
 --	--Validate params...
---	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
---	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
---	EXEC ZZ_SlappFramework.ErrorIfNoIntegerPrimaryKey @DomainSchemaName, @DomainTableName;
+--	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+--	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+--	EXEC SqlXl.ErrorIfNoIntegerPrimaryKey @DomainSchemaName, @DomainTableName;
 
 --	DECLARE @SQL NVARCHAR(MAX) = '';
 --	DECLARE @UserFriendlyFeatureName NVARCHAR(255) = '';	
@@ -3595,11 +3595,11 @@ GO
 --			--**************************
 --			--Determine expected number of deletions...
 --			declare @RequestedDeletions int = 
---			(select count(distinct ' + ZZ_SlappFramework.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName) + ' ) from #ZZTemp);
+--			(select count(distinct ' + SqlXl.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName) + ' ) from #ZZTemp);
 
 --			-- Delete row(s) from ProductionTable based on PrimaryKeyColumn expected in #ZZTemp...
 --			delete from  ' + @DomainSchemaName + '.' + @DomainTableName + '  
---			where ' + ZZ_SlappFramework.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName) + ' in (select distinct ' + ZZ_SlappFramework.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName) + '  from #ZZTemp);
+--			where ' + SqlXl.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName) + ' in (select distinct ' + SqlXl.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName) + '  from #ZZTemp);
 
 --			--Determine ACTUAL number of deletions...
 --			declare @ActualDeletions int = @@ROWCOUNT;	
@@ -3645,7 +3645,7 @@ GO
 --	set @SprocToProcessPerfectStagedData = @DomainTableName + '_DeleteRowsPerZZTemp';
 
 --	--Insert a record for this newly created feature...
---	INSERT ZZ_SlappFramework.BulkOpFeatures
+--	INSERT SqlXl.BulkOpFeatures
 --	(
 --	    UserFriendlyFeatureName,
 --		InsertUpdateDeleteOrCustom,
@@ -3661,7 +3661,7 @@ GO
 --		'Delete',--InsertUpdateDeleteOrCustom
 --	    @DomainSchemaName,    -- DomainSchemaName - nvarchar(128)
 --	    @DomainTableName,    -- DomainTableName - nvarchar(128)
---	    'ZZ_SlappFramework',    -- StagingSchemaName - nvarchar(128)
+--	    'SqlXl',    -- StagingSchemaName - nvarchar(128)
 --	    'NotApplicableForBulkDelete',    -- StagingTableName - nvarchar(128)
 --	    @SprocToProcessPerfectStagedData,    -- SprocToProcessPerfectStagedData - nvarchar(128)
 --	    30 -- MenuDisplayRanking - int
@@ -3670,37 +3670,37 @@ GO
 
 --GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[Scaffold_INSERT_UPDATE_AND_DELETE_Features]
+CREATE PROCEDURE [SqlXl].[Scaffold_INSERT_UPDATE_AND_DELETE_Features]
 (
     @DomainSchemaName nvarchar(128),
 	@DomainTableName nvarchar(128),
-	@StagingSchemaName nvarchar(128) = 'ZZ_SlappFramework'
+	@StagingSchemaName nvarchar(128) = 'SqlXl'
 )
 AS
 BEGIN
 	--(Assume that param validation happens in the following sproc calls, 
 	--so no param validation here...)
 
-	EXEC ZZ_SlappFramework.ScaffoldAn_INSERT_Feature @DomainSchemaName, @DomainTableName, @StagingSchemaName;
+	EXEC SqlXl.ScaffoldAn_INSERT_Feature @DomainSchemaName, @DomainTableName, @StagingSchemaName;
 
-	EXEC ZZ_SlappFramework.ScaffoldAn_UPDATE_Feature @DomainSchemaName, @DomainTableName, @StagingSchemaName;
+	EXEC SqlXl.ScaffoldAn_UPDATE_Feature @DomainSchemaName, @DomainTableName, @StagingSchemaName;
 	
-	--EXEC ZZ_SlappFramework.ScaffoldA_DELETE_Feature @DomainSchemaName, @DomainTableName;
+	--EXEC SqlXl.ScaffoldA_DELETE_Feature @DomainSchemaName, @DomainTableName;
 	
 END; --end sproc 
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[Scaffold_ALL_TABLES_InsertUpdateAndDeleteFeatures]
+CREATE PROCEDURE [SqlXl].[Scaffold_ALL_TABLES_InsertUpdateAndDeleteFeatures]
 (
     @DomainSchemaName nvarchar(128),
-	@StagingSchemaName nvarchar(128) = 'ZZ_SlappFramework'
+	@StagingSchemaName nvarchar(128) = 'SqlXl'
 )
 AS
 BEGIN
 
 --Validate params...
-EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
-EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @StagingSchemaName;
+EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+EXEC SqlXl.ErrorIfSchemaDoesNotExist @StagingSchemaName;
 
 DECLARE @DomainTableName nvarchar(128);
 
@@ -3732,7 +3732,7 @@ FETCH NEXT FROM table_cursor INTO @DomainTableName;
 -- Loop through the rows
 WHILE @@FETCH_STATUS = 0
 BEGIN
-	EXEC ZZ_SlappFramework.Scaffold_INSERT_UPDATE_AND_DELETE_Features @DomainSchemaName, @DomainTableName, @StagingSchemaName;
+	EXEC SqlXl.Scaffold_INSERT_UPDATE_AND_DELETE_Features @DomainSchemaName, @DomainTableName, @StagingSchemaName;
 	
     -- Fetch the next row
     FETCH NEXT FROM table_cursor INTO @DomainTableName;
@@ -3747,7 +3747,7 @@ DEALLOCATE table_cursor;
 END; --end sproc 
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ListColumNamesToAttemptToUpdateOnSingleValidStagingRow]
+CREATE PROCEDURE [SqlXl].[ListColumNamesToAttemptToUpdateOnSingleValidStagingRow]
 (	/*When attempting a series of statements like: 
 	update Staging_Persons_ForUpdates
 		set SomeColumn = (select SomeValueFromZZTemp from #ZZTemp where ZZTemp_ID = @ID);
@@ -3761,9 +3761,9 @@ CREATE PROCEDURE [ZZ_SlappFramework].[ListColumNamesToAttemptToUpdateOnSingleVal
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @StagingSchemaName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @StagingSchemaName;
 	--Ensure that this is Insert, Update, Delete or Custom...
 	if @InsertUpdateDeleteOrCustom not in ('Insert','Update','Delete','Custom')
 	begin
@@ -3776,7 +3776,7 @@ BEGIN
 
 	--Get pk col name for domain table...
 	declare @DomainTblPrimaryKeyColumnName nvarchar(128) = 
-		ZZ_SlappFramework.GetPrimaryKeyColumnName (@DomainSchemaName, @DomainTableName);
+		SqlXl.GetPrimaryKeyColumnName (@DomainSchemaName, @DomainTableName);
 
 	--If operation type is Update, then
 	--OMIT the DomainTable.PrimaryKey column...
@@ -3811,7 +3811,7 @@ BEGIN
 end --end sproc 
 go 
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ValidateZZTemp_For_INSERT_FEATURE_ForUniqueConstraintsReturnErrors]
+CREATE PROCEDURE [SqlXl].[ValidateZZTemp_For_INSERT_FEATURE_ForUniqueConstraintsReturnErrors]
 (
 	@DomainSchemaName NVARCHAR(128),
     @DomainTableName NVARCHAR(128),
@@ -3823,11 +3823,11 @@ CREATE PROCEDURE [ZZ_SlappFramework].[ValidateZZTemp_For_INSERT_FEATURE_ForUniqu
 AS
 BEGIN
 	--Validate params...
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
-	EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @StagingSchemaName;
-	EXEC ZZ_SlappFramework.ErrorIfTableDoesNotExist @StagingSchemaName, @StagingTableName;
-	EXEC ZZ_SlappFramework.ErrorIfInvalidGuid @RequestID;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+	EXEC SqlXl.ErrorIfSchemaDoesNotExist @StagingSchemaName;
+	EXEC SqlXl.ErrorIfTableDoesNotExist @StagingSchemaName, @StagingTableName;
+	EXEC SqlXl.ErrorIfInvalidGuid @RequestID;
 	--end param validation
 
 	SET NOCOUNT ON;
@@ -3842,7 +3842,7 @@ BEGIN
 		ColumnNames NVARCHAR(MAX)
 	);
 	insert @ConstraintDetails (ColumnNames)
-	exec [ZZ_SlappFramework].[ListUniqueKeyConstraintsForTable]
+	exec [SqlXl].[ListUniqueKeyConstraintsForTable]
 		@SchemaName = @DomainSchemaName,
 		@TableName = @DomainTableName,
 		@IncludePrimaryKeyColumnInResults = 0,
@@ -3866,7 +3866,7 @@ BEGIN
 
 		--Generate sql that makes an error listing for all uniqueness violations...
 		set @SQL =
-			ZZ_SlappFramework.GenerateDuplicateCheckSQL(
+			SqlXl.GenerateDuplicateCheckSQL(
 				@DomainSchemaName,
 				@DomainTableName,
 				@ColumnNames,
@@ -3880,7 +3880,7 @@ BEGIN
 		if (select count(*) from #Messages) >= @StopAfterThisManyErrors
 		begin
 			--Clean staging table...
-			EXEC [ZZ_SlappFramework].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
+			EXEC [SqlXl].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
 
 			-- Exit cursor cleanly
 			CLOSE ConstraintCursor;
@@ -3903,7 +3903,7 @@ BEGIN
 end --end sproc 
 go 
 
-CREATE PROCEDURE [ZZ_SlappFramework].[PurgeStagingValidateZZTempAndReturnErrors]
+CREATE PROCEDURE [SqlXl].[PurgeStagingValidateZZTempAndReturnErrors]
 (
 	@BulkOpFeaturesID int,
 	@RequestID nvarchar(36),
@@ -3912,13 +3912,13 @@ CREATE PROCEDURE [ZZ_SlappFramework].[PurgeStagingValidateZZTempAndReturnErrors]
 )
 AS
 BEGIN
-	--debug-related: exec ZZ_SlappFramework.DebugLogInsert @RequestID, '','Sproc started...';
+	--debug-related: exec SqlXl.DebugLogInsert @RequestID, '','Sproc started...';
 
 	--validate params...
 	-- Validate that exists for the given @BulkOpsFeaturesID
 	IF NOT EXISTS (
 		SELECT 1
-		FROM [ZZ_SlappFramework].[BulkOpFeatures]
+		FROM [SqlXl].[BulkOpFeatures]
 		WHERE [ID] = @BulkOpFeaturesID
 	)
 	BEGIN
@@ -3926,7 +3926,7 @@ BEGIN
 		RETURN -1; -- Halt execution
 	END
 
-	EXEC ZZ_SlappFramework.ErrorIfInvalidGuid @RequestID;
+	EXEC SqlXl.ErrorIfInvalidGuid @RequestID;
 
 	--Avoid runaway processing...
 	if @StopAfterThisManyErrors > 1000
@@ -3951,7 +3951,7 @@ BEGIN
 		@DomainTableName = [DomainTableName],
 		@InsertUpdateDeleteOrCustom = [InsertUpdateDeleteOrCustom],
 		@DomainSprocNameToProcessDataFromStagingTable = [SprocToProcessPerfectStagedData]
-	FROM [ZZ_SlappFramework].[BulkOpFeatures]
+	FROM [SqlXl].[BulkOpFeatures]
 	WHERE [ID] = @BulkOpFeaturesID;
 
 	SET NOCOUNT ON;
@@ -3961,7 +3961,7 @@ BEGIN
 		-- Compile the T-SQL statement for debugging
 		DECLARE @DebugSQL NVARCHAR(MAX);
 
-		SET @DebugSQL = N'EXEC [ZZ_SlappFramework].[PurgeStagingValidateZZTempAndReturnErrors] ' +
+		SET @DebugSQL = N'EXEC [SqlXl].[PurgeStagingValidateZZTempAndReturnErrors] ' +
 			N'@DomainSchemaName = N''' + REPLACE(@DomainSchemaName, '''', '''''') + N''', ' +
 			N'@DomainTableName = N''' + REPLACE(@DomainTableName, '''', '''''') + N''', ' +
 			N'@StagingSchemaName = N''' + REPLACE(@StagingSchemaName, '''', '''''') + N''', ' +
@@ -3972,21 +3972,21 @@ BEGIN
 			N'@Debug = ' + CAST(@Debug AS NVARCHAR) + N';';
 
 		-- Insert debug information into DebugLog...
-		exec ZZ_SlappFramework.DebugLogInsert @RequestID, @DebugSQL, 
-			'Sproc: [ZZ_SlappFramework].[PurgeStagingValidateZZTempAndReturnErrors] started...';
+		exec SqlXl.DebugLogInsert @RequestID, @DebugSQL, 
+			'Sproc: [SqlXl].[PurgeStagingValidateZZTempAndReturnErrors] started...';
     END --end debug
 	
     DECLARE @SQL NVARCHAR(MAX);
 
 	--Delete all staging rows for this RequestID...
-	EXEC [ZZ_SlappFramework].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
+	EXEC [SqlXl].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
 
-	--debug-related: exec ZZ_SlappFramework.DebugLogInsert @RequestID, '','about to insert single valid row to staging...';
+	--debug-related: exec SqlXl.DebugLogInsert @RequestID, '','about to insert single valid row to staging...';
     
 	/*// Load a single valid row of sample data to the staging table.
 	// This row is what enables row-by-row, column-by-column
 	// data validation later...*/
-	exec ZZ_SlappFramework.InsertSingleValidSampleRowToStagingGivenTheRealProdTableName 
+	exec SqlXl.InsertSingleValidSampleRowToStagingGivenTheRealProdTableName 
 		@DomainSchemaName, @DomainTableName, @StagingSchemaName, @StagingTableName, @RequestID ;
 
 	 -- Check if exactly one row was inserted
@@ -3996,7 +3996,7 @@ BEGIN
         RETURN -1;  -- Return -1 to indicate an error condition
     END
 
-	--debug-related: exec ZZ_SlappFramework.DebugLogInsert @RequestID, '','after verifying one single row was inserted';
+	--debug-related: exec SqlXl.DebugLogInsert @RequestID, '','after verifying one single row was inserted';
 
 	DECLARE @ResultMessage NVARCHAR(255);
     DECLARE @ReturnStatus INT;
@@ -4019,7 +4019,7 @@ BEGIN
     BEGIN
         -- Print the current row's ZZTemp_ID value
         --PRINT 'Row ZZTemp_ID: ' + CAST(@ZZTempID AS NVARCHAR(10))
-		--debug-related: exec ZZ_SlappFramework.DebugLogInsert @RequestID, '','Entered ZZTempCursor...';
+		--debug-related: exec SqlXl.DebugLogInsert @RequestID, '','Entered ZZTempCursor...';
 
 		-- Get a list of all columns in #ZZTemp
 		-- for this data validation...
@@ -4030,7 +4030,7 @@ BEGIN
 		DELETE FROM @TblColumnNames;
 
 		Insert @TblColumnNames (ColumnName)
-		exec [ZZ_SlappFramework].[ListColumNamesToAttemptToUpdateOnSingleValidStagingRow]
+		exec [SqlXl].[ListColumNamesToAttemptToUpdateOnSingleValidStagingRow]
 				@DomainSchemaName, @DomainTableName, @StagingSchemaName, @InsertUpdateDeleteOrCustom;
 
         -- Declare variables for the column cursor
@@ -4052,11 +4052,11 @@ BEGIN
         BEGIN
             -- Print the current column name
             --PRINT 'Column Name: ' + @ColumnName
-			--debug-related: exec ZZ_SlappFramework.DebugLogInsert @RequestID, '','Entered column cursor...';
-			--debug-related: exec ZZ_SlappFramework.DebugLogInsert @RequestID,'Validating column...',@ColumnName;
+			--debug-related: exec SqlXl.DebugLogInsert @RequestID, '','Entered column cursor...';
+			--debug-related: exec SqlXl.DebugLogInsert @RequestID,'Validating column...',@ColumnName;
 
             EXEC @ReturnStatus = 
-                ZZ_SlappFramework.AttemptToUpdateOneSingleColumnInTheDestinationTableFromTheSourceTableAndReturnMessage 
+                SqlXl.AttemptToUpdateOneSingleColumnInTheDestinationTableFromTheSourceTableAndReturnMessage 
 					@SourceSchemaName = @StagingSchemaName,
                     @SourceTableName = '#ZZTemp' ,
                     @SourceTablePrimaryKeyColumnName = 'ZZTemp_ID' , 
@@ -4067,7 +4067,7 @@ BEGIN
                     @ResultMessage = @ResultMessage output  
             ;--end exec 
 
-			--debug-related: exec ZZ_SlappFramework.DebugLogInsert @RequestID,'@ResultMessage:',@ResultMessage;
+			--debug-related: exec SqlXl.DebugLogInsert @RequestID,'@ResultMessage:',@ResultMessage;
 
             --If update NOT successful...
             if @ResultMessage <> 'Success'
@@ -4079,13 +4079,13 @@ BEGIN
                     ', ' + @ColumnName + ': ' + @ResultMessage )
                 ;--end insert 
 
-				--debug-related: exec ZZ_SlappFramework.DebugLogInsert @RequestID, 'error message inserted for:', @ColumnName;
+				--debug-related: exec SqlXl.DebugLogInsert @RequestID, 'error message inserted for:', @ColumnName;
 				
 				--Check error count threshold...
 				if (select count(*) from #Messages) >= @StopAfterThisManyErrors
 				begin
 					--Delete all staging rows for this RequestID...
-					EXEC [ZZ_SlappFramework].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
+					EXEC [SqlXl].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
 					
 					-- Exit from both cursors cleanly
 					CLOSE ColumnCursor;
@@ -4123,7 +4123,7 @@ BEGIN
 		and @InsertUpdateDeleteOrCustom <> 'Update'
 	begin
 		--Delete all staging rows for this RequestID...
-		EXEC [ZZ_SlappFramework].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
+		EXEC [SqlXl].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
 		
 		-- Return the table variable and halt further processing
 		select Msg from #Messages;
@@ -4133,20 +4133,20 @@ BEGIN
 	--Check for uniqueness differently, based on inserts vs updates...
 	if @InsertUpdateDeleteOrCustom = 'Insert'
 	begin
-		exec [ZZ_SlappFramework].ValidateZZTemp_For_INSERT_FEATURE_ForUniqueConstraintsReturnErrors 
+		exec [SqlXl].ValidateZZTemp_For_INSERT_FEATURE_ForUniqueConstraintsReturnErrors 
 			@DomainSchemaName, @DomainTableName, @StagingSchemaName, @StagingTableName,	
 			@StopAfterThisManyErrors, @RequestID ;
 	end --end if 
 
 	if @InsertUpdateDeleteOrCustom = 'Update'
 	begin
-		exec [ZZ_SlappFramework].[ValidateZZTemp_For_UPDATE_FEATURE_ForUniqueConstraintsReturnErrors]
+		exec [SqlXl].[ValidateZZTemp_For_UPDATE_FEATURE_ForUniqueConstraintsReturnErrors]
 			@DomainSchemaName, @DomainTableName, @StagingSchemaName, 
 			@StagingTableName, @StopAfterThisManyErrors, @RequestID ;
 	end --end if
 
 	--Delete all staging rows for this RequestID...
-	EXEC [ZZ_SlappFramework].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
+	EXEC [SqlXl].[PurgeStagingForRequestID] @StagingTableName, @RequestID;
 
     --Return all error messages
     --(empty table if no errors).
@@ -4155,33 +4155,33 @@ BEGIN
 END; --end sproc 
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].SavedQueryInsert
+CREATE PROCEDURE [SqlXl].SavedQueryInsert
     @SavedQueryName NVARCHAR(255),
     @SavedQueryText NVARCHAR(MAX)
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO [ZZ_SlappFramework].SavedQueries (SavedQueryName, SavedQueryText)
+    INSERT INTO [SqlXl].SavedQueries (SavedQueryName, SavedQueryText)
     VALUES (@SavedQueryName, @SavedQueryText);
 END;
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].SavedQueryUpdate
+CREATE PROCEDURE [SqlXl].SavedQueryUpdate
     @ID INT,
     @SavedQueryText NVARCHAR(MAX)
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    UPDATE [ZZ_SlappFramework].SavedQueries
+    UPDATE [SqlXl].SavedQueries
     SET SavedQueryText = @SavedQueryText,
         LastModifiedOnDate = SYSDATETIME()
     WHERE ID = @ID;
 END;
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[SavedQueries_CreateSamples_ALL_TABLES]
+CREATE PROCEDURE [SqlXl].[SavedQueries_CreateSamples_ALL_TABLES]
 (
 @DomainSchemaName nvarchar(128)
 )
@@ -4189,7 +4189,7 @@ AS
 BEGIN
 
 --Validate params...
-EXEC ZZ_SlappFramework.ErrorIfSchemaDoesNotExist @DomainSchemaName;
+EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
 
 DECLARE @DomainTableName nvarchar(128);
 
@@ -4229,7 +4229,7 @@ BEGIN
 	SET @SavedQueryText = 'SELECT TOP 1000 * FROM [' + @DomainSchemaName + '].[' + @DomainTableName + ']';
 
 	-- Execute the stored procedure
-	EXEC [ZZ_SlappFramework].SavedQueryInsert 
+	EXEC [SqlXl].SavedQueryInsert 
 		@SavedQueryName = @SavedQueryName,
 		@SavedQueryText = @SavedQueryText;
 	
@@ -4246,7 +4246,7 @@ DEALLOCATE table_cursor;
 END; --end sproc
 GO
 
-create PROCEDURE [ZZ_SlappFramework].[ValidateThenRunSelectQueryReturnJsonMetadataAndData]
+create PROCEDURE [SqlXl].[ValidateThenRunSelectQueryReturnJsonMetadataAndData]
     @Query NVARCHAR(MAX)
 AS
 BEGIN
@@ -4264,14 +4264,14 @@ BEGIN
 	This one is brilliant but unless you need all 
 	of this returned in one single db call, then 
 	consider using a simpler alternative, like 
-	ZZ_SlappFramework.ValidateThenRunSelectQuery.
+	SqlXl.ValidateThenRunSelectQuery.
 	*************************************************/
 
 	-- Normalize the input
     SET @Query = REPLACE(REPLACE(LTRIM(RTRIM(@Query)), CHAR(13), ''), CHAR(10), '');
 
 	--strip-out multi-line comments...
-	Set @Query = ZZ_SlappFramework.RemoveMultiLineComments(@Query);
+	Set @Query = SqlXl.RemoveMultiLineComments(@Query);
 
     -- Validate that the query starts with SELECT
     IF NOT EXISTS (SELECT 1 WHERE @Query LIKE 'SELECT%' AND NOT @Query LIKE '%--%' AND NOT @Query LIKE '%;%')
@@ -4407,7 +4407,7 @@ BEGIN
 END --end sproc 
 go 
 
-CREATE PROCEDURE [ZZ_SlappFramework].[GetMenuItems]
+CREATE PROCEDURE [SqlXl].[GetMenuItems]
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -4429,7 +4429,7 @@ BEGIN
 	,[ActionName] = 'MakeFormEditor'
 	,[QueryString] = '&featureID=' + convert(nvarchar, f.ID)
 	,[SortOrder] = 100 
-	from ZZ_SlappFramework.BulkOpFeatures f 
+	from SqlXl.BulkOpFeatures f 
 	where 
 	f.InsertUpdateDeleteOrCustom = 'Insert'
 
@@ -4443,7 +4443,7 @@ BEGIN
         QueryString = '&featureID=' + convert(nvarchar, ID),
         SortOrder = 200 
     FROM 
-        ZZ_SlappFramework.BulkOpFeatures
+        SqlXl.BulkOpFeatures
 	where 
 		InsertUpdateDeleteOrCustom = 'Insert'
 
@@ -4455,7 +4455,7 @@ BEGIN
 		,[ActionName] = 'FileUploadScreen'
 		,[QueryString] = '&featureID=' + convert(nvarchar, f.ID)
 		,[SortOrder] = 300 
-	from ZZ_SlappFramework.BulkOpFeatures f 
+	from SqlXl.BulkOpFeatures f 
 	where 
 	f.InsertUpdateDeleteOrCustom = 'Insert'
 
@@ -4469,7 +4469,7 @@ BEGIN
         QueryString = '&featureID=' + convert(nvarchar, ID),
         SortOrder = 300 
     FROM 
-        ZZ_SlappFramework.BulkOpFeatures
+        SqlXl.BulkOpFeatures
 	where 
 		InsertUpdateDeleteOrCustom = 'Update'
 
@@ -4483,7 +4483,7 @@ BEGIN
         QueryString = '&featureID=' + convert(nvarchar, ID),
         SortOrder = 310
     FROM 
-        ZZ_SlappFramework.BulkOpFeatures
+        SqlXl.BulkOpFeatures
 	where 
 		InsertUpdateDeleteOrCustom = 'Update'
 
@@ -4522,17 +4522,17 @@ BEGIN
 	--	,[ActionName] = 'EditGetRowsToEdit_SelectStatement'
 	--	,[QueryString] = '&featureID=' + convert(nvarchar, f.ID)
 	--	,[SortOrder] = 1300 
-	--from ZZ_SlappFramework.BulkOpFeatures f 
+	--from SqlXl.BulkOpFeatures f 
 
 	union 
 
 	select 
-		[DisplayName] = 'ZZDev - About SlappFramework'
+		[DisplayName] = 'ZZDev - About SqlXL'
 		,[ControllerName] = 'Home'
-		,[ActionName] = 'AboutSlappFramework'
+		,[ActionName] = 'AboutSqlXL'
 		,[QueryString] = ''
 		,[SortOrder] = 1400 
-	from ZZ_SlappFramework.BulkOpFeatures f 
+	from SqlXl.BulkOpFeatures f 
 
     -- Apply sorting for the final result set
     ORDER BY SortOrder, DisplayName;
@@ -4540,7 +4540,7 @@ BEGIN
 END --end sproc
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[GetDropdownOptionsForFeature]
+CREATE PROCEDURE [SqlXl].[GetDropdownOptionsForFeature]
     @FeatureID INT,
     @ReturnAsJson BIT = 0  --0 = DataTable, 1 = JSON
 AS
@@ -4554,7 +4554,7 @@ BEGIN
     SELECT 
         @StagingSchemaName = StagingSchemaName,
         @StagingTableName = StagingTableName
-    FROM [ZZ_SlappFramework].[BulkOpFeatures]
+    FROM [SqlXl].[BulkOpFeatures]
     WHERE ID = @FeatureID;
     
     -- Validate that we found the feature
@@ -4572,8 +4572,8 @@ BEGIN
     -- Cursor through FK columns that have dropdown configurations
     DECLARE fk_cursor CURSOR FOR
         SELECT mc.ColumnName, cuc.DropdownSelectStatement
-        FROM [ZZ_SlappFramework].[Meta_Columns] mc
-        INNER JOIN [ZZ_SlappFramework].[ColumnUIConfigurations] cuc 
+        FROM [SqlXl].[Meta_Columns] mc
+        INNER JOIN [SqlXl].[ColumnUIConfigurations] cuc 
             ON mc.ColumnName = cuc.ColumnName 
         WHERE mc.SchemaName = @StagingSchemaName 
           AND mc.TableName = @StagingTableName
@@ -4628,7 +4628,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[GetRowsToChooseFrom]
+CREATE PROCEDURE [SqlXl].[GetRowsToChooseFrom]
 	@FeatureID int 
 AS
 BEGIN
@@ -4637,22 +4637,22 @@ BEGIN
 	--Lookup select statement...
 	declare @Sql nvarchar(max) =
 		(select GetRowsToChooseFrom_SelectStatement
-			from ZZ_SlappFramework.BulkOpFeatures
+			from SqlXl.BulkOpFeatures
 			where ID = @FeatureID);
 
 	--Remove any comments the sql code may have...
-	set @Sql = ZZ_SlappFramework.RemoveMultiLineComments(@Sql);
+	set @Sql = SqlXl.RemoveMultiLineComments(@Sql);
 
 	--Run query and return the metadata along with results...
-	exec ZZ_SlappFramework.ValidateThenRunSelectQueryReturnJsonMetadataAndData @Sql;
+	exec SqlXl.ValidateThenRunSelectQueryReturnJsonMetadataAndData @Sql;
 
 	-- Integrate dropdown options for FKs here...
-	exec ZZ_SlappFramework.GetDropdownOptionsForFeature @FeatureID, 1;--1=return as json
+	exec SqlXl.GetDropdownOptionsForFeature @FeatureID, 1;--1=return as json
 
 END --end sproc
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[GetMeta_ColumnsForTableAsJson]
+CREATE PROCEDURE [SqlXl].[GetMeta_ColumnsForTableAsJson]
 	@FeatureID int 
 AS
 BEGIN
@@ -4664,10 +4664,10 @@ BEGIN
     SELECT 
         @DomainSchemaName = DomainSchemaName,
         @DomainTableName = DomainTableName
-    FROM [ZZ_SlappFramework].[BulkOpFeatures]
+    FROM [SqlXl].[BulkOpFeatures]
     WHERE ID = @FeatureID;
 
-	exec ZZ_SlappFramework.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
+	exec SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
 
     -- Return the corresponding columns as JSON
     SELECT 
@@ -4688,13 +4688,13 @@ BEGIN
 
         ValidSampleValue,
         InvalidSampleValue
-    FROM [ZZ_SlappFramework].[Meta_Columns]
+    FROM [SqlXl].[Meta_Columns]
     WHERE SchemaName = @DomainSchemaName AND TableName = @DomainTableName
     FOR JSON AUTO, INCLUDE_NULL_VALUES;
 END --end sproc
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[ValidateThenRunSelectStatement]
+CREATE PROCEDURE [SqlXl].[ValidateThenRunSelectStatement]
     @SelectStatement NVARCHAR(MAX)
 AS
 BEGIN
@@ -4704,7 +4704,7 @@ BEGIN
     SET @SelectStatement = REPLACE(REPLACE(LTRIM(RTRIM(@SelectStatement)), CHAR(13), ''), CHAR(10), '');
 
 	--strip-out multi-line comments...
-	Set @SelectStatement = ZZ_SlappFramework.RemoveMultiLineComments(@SelectStatement);
+	Set @SelectStatement = SqlXl.RemoveMultiLineComments(@SelectStatement);
 
     -- Validate that the query starts with SELECT
     IF NOT EXISTS (SELECT 1 WHERE @SelectStatement LIKE 'SELECT%' AND NOT @SelectStatement LIKE '%--%' AND NOT @SelectStatement LIKE '%;%')
@@ -4758,7 +4758,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[GetFormStarterData]
+CREATE PROCEDURE [SqlXl].[GetFormStarterData]
 	@FeatureID int 
 AS
 BEGIN
@@ -4772,11 +4772,11 @@ BEGIN
 		@StagingSchemaName = StagingSchemaName,
 		@StagingTableName = StagingTableName,
 		@GetRowsToEdit_SelectStatement = GetRowsToEdit_SelectStatement
-    FROM [ZZ_SlappFramework].[BulkOpFeatures]
+    FROM [SqlXl].[BulkOpFeatures]
     WHERE ID = @FeatureID;
 
 	--Sanity-check result...
-	exec ZZ_SlappFramework.ErrorIfTableDoesNotExist @StagingSchemaName, @StagingTableName;
+	exec SqlXl.ErrorIfTableDoesNotExist @StagingSchemaName, @StagingTableName;
 
     -- First result to return is from Meta_Columns...
     SELECT 
@@ -4795,7 +4795,7 @@ BEGIN
 
         ValidSampleValue,
         InvalidSampleValue
-    FROM [ZZ_SlappFramework].[Meta_Columns]
+    FROM [SqlXl].[Meta_Columns]
     WHERE SchemaName = @StagingSchemaName 
 			AND TableName = @StagingTableName
 	;--end select 
@@ -4805,14 +4805,14 @@ BEGIN
 	--hold default values and optional label overrides...
 
 	--Remove any comments the sql code may have...
-	set @GetRowsToEdit_SelectStatement = ZZ_SlappFramework.RemoveMultiLineComments(@GetRowsToEdit_SelectStatement);
+	set @GetRowsToEdit_SelectStatement = SqlXl.RemoveMultiLineComments(@GetRowsToEdit_SelectStatement);
 
 	--Run and return results from GetRowsToEdit_SelectStatement statement...
-	exec ZZ_SlappFramework.ValidateThenRunSelectStatement @GetRowsToEdit_SelectStatement;
+	exec SqlXl.ValidateThenRunSelectStatement @GetRowsToEdit_SelectStatement;
 
 	-- After existing logic (metadata and default values)
 	-- Add third result set:
-	EXEC [ZZ_SlappFramework].[GetDropdownOptionsForFeature] @FeatureID;
+	EXEC [SqlXl].[GetDropdownOptionsForFeature] @FeatureID;
 
 	/* Note: end result should end up like the following...
 	Table[0]: Metadata 
@@ -4844,7 +4844,7 @@ BEGIN
 END --end sproc
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[PrintDebugScript]
+CREATE PROCEDURE [SqlXl].[PrintDebugScript]
 	@BulkOpsFeatureID int,
 	@SchemaName NVARCHAR(128),
     @ProcedureName NVARCHAR(128)
@@ -4872,7 +4872,7 @@ BEGIN
 	print '';
 
 	--Generate code to initialize temp tables...
-	print [ZZ_SlappFramework].[GenerateDebugStarter]();
+	print [SqlXl].[GenerateDebugStarter]();
 
     -- Get parameter declarations
     SELECT @ParamDefinition = STRING_AGG(
@@ -4899,7 +4899,7 @@ BEGIN
         ISNULL(@ParamDefinition, '-- No parameters') + CHAR(13) + CHAR(10) +
 		'-- Parameter values looked-up from BulkOpFeaturesTable...' + CHAR(13) + CHAR(10) +
 		'-- (use these instead of other param declarations as needed)' + CHAR(13) + CHAR(10) +
-		[ZZ_SlappFramework].[GenerateVarDeclarations](@BulkOpsFeatureID) + 
+		[SqlXl].[GenerateVarDeclarations](@BulkOpsFeatureID) + 
         '-- Procedure Body (you will need to delete beginning and end of sproc code below)' + CHAR(13) + CHAR(10) +
         @ProcedureCode;
 
@@ -4920,7 +4920,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[GetExcelTemplateData]
+CREATE PROCEDURE [SqlXl].[GetExcelTemplateData]
     @FeatureID INT,
 	@SelectedIds NVARCHAR(MAX) = NULL -- Optional parameter
 AS
@@ -4928,7 +4928,7 @@ BEGIN
     SET NOCOUNT ON;
     
     -- Validate that the feature exists
-    IF NOT EXISTS (SELECT 1 FROM [ZZ_SlappFramework].[BulkOpFeatures] WHERE ID = @FeatureID)
+    IF NOT EXISTS (SELECT 1 FROM [SqlXl].[BulkOpFeatures] WHERE ID = @FeatureID)
     BEGIN
         RAISERROR('FeatureID %d does not exist in BulkOpFeatures table.', 16, 1, @FeatureID);
         RETURN;
@@ -4937,7 +4937,7 @@ BEGIN
 	--If provided, validate selectedIds param...
 	if @SelectedIds is not null 
 	begin
-		exec ZZ_SlappFramework.ErrorSelectedIdsNotAsExpected @SelectedIds;
+		exec SqlXl.ErrorSelectedIdsNotAsExpected @SelectedIds;
 	end 
     
 	-- Get the feature details
@@ -4948,7 +4948,7 @@ BEGIN
 		@DomainSchemaName = BulkOpFeatures.DomainSchemaName,
 		@DomainTableName = BulkOpFeatures.DomainTableName,
 		@GetRowsToEdit_SelectStatement = BulkOpFeatures.GetRowsToEdit_SelectStatement
-    FROM [ZZ_SlappFramework].[BulkOpFeatures]
+    FROM [SqlXl].[BulkOpFeatures]
     WHERE ID = @FeatureID;
 
 	-- Start with the configured select statement...
@@ -4956,25 +4956,25 @@ BEGIN
 		@GetRowsToEdit_SelectStatement;
 
 	-- Remove any comments the sql code may have...
-	SET @Sql = ZZ_SlappFramework.RemoveMultiLineComments(@Sql);
+	SET @Sql = SqlXl.RemoveMultiLineComments(@Sql);
 
 	-- Append where clause if SelectedIDs were provided...
 	if @SelectedIds is not null 
 	begin
 		-- Get primary key column name
 		DECLARE @PKColumn NVARCHAR(128) =
-			[ZZ_SlappFramework].[GetPrimaryKeyColumnName](@DomainSchemaName, @DomainTableName);
+			[SqlXl].[GetPrimaryKeyColumnName](@DomainSchemaName, @DomainTableName);
 
 		-- Add WHERE clause for selected rows
 		SET @Sql = @Sql + ' WHERE ' + QUOTENAME(@PKColumn) + ' IN (' + @SelectedIds + ')';
 	end --end if 
 
     -- Result Set 1: Starting point data for Sheet1 (editable data rows)
-    EXEC ZZ_SlappFramework.ValidateThenRunSelectStatement @Sql;
+    EXEC SqlXl.ValidateThenRunSelectStatement @Sql;
 
     -- Result Set 2: Dropdown options for Sheet2 (ForColumn, OptionText format)
     -- Call the existing sproc to get dropdown options
-    EXEC [ZZ_SlappFramework].[GetDropDownOptionsForFeature] @FeatureID;
+    EXEC [SqlXl].[GetDropDownOptionsForFeature] @FeatureID;
 
     -- Result Set 3: Column metadata from Meta_Columns (for metadata sheet)
     -- Get staging table info for SqlDataType, but domain table info for IsPrimaryKey
@@ -4983,15 +4983,15 @@ BEGIN
     SELECT
         @StagingSchemaName = StagingSchemaName,
         @StagingTableName = StagingTableName
-    FROM [ZZ_SlappFramework].[BulkOpFeatures]
+    FROM [SqlXl].[BulkOpFeatures]
     WHERE ID = @FeatureID;
 
     SELECT
         s.ColumnName,
         s.SqlDataType,
         ISNULL(d.IsPrimaryKey, 'NO') AS IsPrimaryKey  -- Get PK info from domain table
-    FROM [ZZ_SlappFramework].[Meta_Columns] s
-    LEFT JOIN [ZZ_SlappFramework].[Meta_Columns] d
+    FROM [SqlXl].[Meta_Columns] s
+    LEFT JOIN [SqlXl].[Meta_Columns] d
         ON s.ColumnName = d.ColumnName
         AND d.SchemaName = @DomainSchemaName
         AND d.TableName = @DomainTableName
@@ -5002,7 +5002,7 @@ BEGIN
 END;--end sproc 
 go 
 
-CREATE PROCEDURE [ZZ_SlappFramework].[GetStartingPointData]
+CREATE PROCEDURE [SqlXl].[GetStartingPointData]
 	@FeatureID INT
 AS
 BEGIN
@@ -5012,24 +5012,24 @@ BEGIN
 	DECLARE @GetRowsToEdit_SelectStatement nvarchar(max);
     SELECT
 		@GetRowsToEdit_SelectStatement = GetRowsToEdit_SelectStatement
-    FROM [ZZ_SlappFramework].[BulkOpFeatures]
+    FROM [SqlXl].[BulkOpFeatures]
     WHERE ID = @FeatureID;
 
 	-- Use the configured select statement with sample/default values
 	DECLARE @Sql NVARCHAR(MAX) = @GetRowsToEdit_SelectStatement;
 
 	-- Remove any comments the sql code may have...
-	SET @Sql = ZZ_SlappFramework.RemoveMultiLineComments(@Sql);
+	SET @Sql = SqlXl.RemoveMultiLineComments(@Sql);
 
 	-- Execute the query and return JSON metadata and data
-	EXEC ZZ_SlappFramework.ValidateThenRunSelectQueryReturnJsonMetadataAndData @Sql;
+	EXEC SqlXl.ValidateThenRunSelectQueryReturnJsonMetadataAndData @Sql;
 
 	-- Include dropdown options for FKs
-	EXEC ZZ_SlappFramework.GetDropdownOptionsForFeature @FeatureID, 1;--1=return as json
+	EXEC SqlXl.GetDropdownOptionsForFeature @FeatureID, 1;--1=return as json
 END --end sproc
 GO
 
-CREATE PROCEDURE [ZZ_SlappFramework].[GetRowsToEdit]
+CREATE PROCEDURE [SqlXl].[GetRowsToEdit]
 	@FeatureID INT,
 	@SelectedIds NVARCHAR(MAX) -- "1,2,3,4"
 AS
@@ -5037,7 +5037,7 @@ BEGIN
     SET NOCOUNT ON;
 
 	--validate selectedIds param...
-	exec ZZ_SlappFramework.ErrorSelectedIdsNotAsExpected @SelectedIds;
+	exec SqlXl.ErrorSelectedIdsNotAsExpected @SelectedIds;
 
 	-- Get feature details
 	DECLARE @DomainSchemaName NVARCHAR(128),
@@ -5047,7 +5047,7 @@ BEGIN
 		@DomainSchemaName = DomainSchemaName,
 		@DomainTableName = DomainTableName,
 		@GetRowsToEdit_SelectStatement = GetRowsToEdit_SelectStatement
-    FROM [ZZ_SlappFramework].[BulkOpFeatures]
+    FROM [SqlXl].[BulkOpFeatures]
     WHERE ID = @FeatureID;
 
 	-- Start with "select * from TableName"...
@@ -5056,26 +5056,26 @@ BEGIN
 
 	-- Get primary key column name
 	DECLARE @PKColumn NVARCHAR(128) =
-		[ZZ_SlappFramework].[GetPrimaryKeyColumnName](@DomainSchemaName, @DomainTableName);
+		[SqlXl].[GetPrimaryKeyColumnName](@DomainSchemaName, @DomainTableName);
 
 	-- Add WHERE clause for selected rows
 	SET @Sql = @Sql + ' WHERE ' + QUOTENAME(@PKColumn) + ' IN (' + @SelectedIds + ')';
 
 	-- Remove any comments the sql code may have...
-	SET @Sql = ZZ_SlappFramework.RemoveMultiLineComments(@Sql);
+	SET @Sql = SqlXl.RemoveMultiLineComments(@Sql);
 
 	-- Execute the query and return JSON metadata and data
-	EXEC ZZ_SlappFramework.ValidateThenRunSelectQueryReturnJsonMetadataAndData @Sql;
+	EXEC SqlXl.ValidateThenRunSelectQueryReturnJsonMetadataAndData @Sql;
 
 	-- Include dropdown options for FKs
-	EXEC ZZ_SlappFramework.GetDropdownOptionsForFeature @FeatureID, 1;--1=return as json
+	EXEC SqlXl.GetDropdownOptionsForFeature @FeatureID, 1;--1=return as json
 
 	-- Return the PK column name so client knows which field to make readonly
 	SELECT @PKColumn AS PrimaryKeyColumnName FOR JSON PATH, WITHOUT_ARRAY_WRAPPER;
 END --end sproc
 GO
 
-/*ToDo CREATE PROCEDURE [ZZ_SlappFramework].[ScaffoldA_CUSTOM_Feature]
+/*ToDo CREATE PROCEDURE [SqlXl].[ScaffoldA_CUSTOM_Feature]
 ...Demonstrate creating a custom feature that has a manually created
 staging table.  It writes to more than one domain table, like 
 users-and-roles, for example; something where it's possible 
