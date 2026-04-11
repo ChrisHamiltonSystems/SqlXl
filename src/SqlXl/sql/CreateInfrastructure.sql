@@ -125,10 +125,12 @@ CREATE FUNCTION [SqlXl].[GenerateSelectStatementToSupportBulkEditingWithFKs]
 
               SET @BestDisplayColumn = SqlXl.GetBestDisplayColumn(@PKTableSchema, @PKTableName);
 
-			-- Add FK display column with assignment syntax (NO AMBIGUITY!) using pipe syntax
+			-- FK display column: pipe encodes "DbColumn|ExcelDisplayName" for import mapping.
+			-- Left of pipe = staging column name (CategoryID), right = clean display name (Categories_CategoryName).
+			-- Excel header shows right-side only; Metadata tab carries the full mapping.
 			SET @SelectClause = @SelectClause +
 				CASE WHEN @SelectClause = '' THEN '' ELSE ',' + CHAR(13) + CHAR(10) + '    ' END +
-				QUOTENAME(@ColumnName + '|' + SqlXl.SingularizeTableName(@ReferencedTableName)) + ' = ' +
+				QUOTENAME(@ColumnName + '|' + @ReferencedTableName + '_' + @BestDisplayColumn) + ' = ' +
 				'CONCAT(' + @FullTableName + '.' + QUOTENAME(@ColumnName) + ', '' - '', ' +
 				@PKTable + '.' + QUOTENAME(@BestDisplayColumn) + ')';
 
@@ -140,10 +142,10 @@ CREATE FUNCTION [SqlXl].[GenerateSelectStatementToSupportBulkEditingWithFKs]
           END
           ELSE
           BEGIN
-              -- Regular column: Use assignment syntax with full qualification (NO AMBIGUITY!) using pipe syntax
+              -- Regular column: pipe with same value both sides so Excel header = DB column name.
               SET @SelectClause = @SelectClause +
                   CASE WHEN @SelectClause = '' THEN '' ELSE ',' + CHAR(13) + CHAR(10) + '    ' END +
-                  QUOTENAME(@ColumnName + '|' + [SqlXl].PascalCaseToLabel(@ColumnName)) + ' = ' + @FullTableName + '.' + QUOTENAME(@ColumnName);
+                  QUOTENAME(@ColumnName + '|' + @ColumnName) + ' = ' + @FullTableName + '.' + QUOTENAME(@ColumnName);
           END
 
           FETCH NEXT FROM column_cursor INTO @ColumnName, @OrdinalPosition, @IsNullable, @IsFK, @PKTable, @PKColumn,
@@ -836,13 +838,10 @@ BEGIN
                 ELSE 'NULL'
             END;
 
-        -- Build the SELECT line for this column
-        SET @ColumnList = 
-            @ColumnList + 
-			--Inject magic pipe-label syntax for field label...
-			--For example...
-			--, [HireDate|Hire Date] = '2024-01-17'
-            ', [' + @ColumnName + '|' + [SqlXl].PascalCaseToLabel (@ColumnName) + '] = ' + @DefaultValue + CHAR(13) + CHAR(10);
+        -- Build the SELECT line: pipe encodes "DbColumn|ExcelDisplayName" (same both sides for regular columns).
+        SET @ColumnList =
+            @ColumnList +
+            ', [' + @ColumnName + '|' + @ColumnName + '] = ' + @DefaultValue + CHAR(13) + CHAR(10);
         
         FETCH NEXT FROM ColumnCursor INTO @ColumnName, @DataType;
     END;
@@ -1155,16 +1154,16 @@ CREATE FUNCTION [SqlXl].[GenerateDisplayViewSQL]
 
               SET @BestDisplayColumn = SqlXl.GetBestDisplayColumn(@PKTableSchema, @PKTableName);
 
-              -- Add FK display column with assignment syntax (NO AMBIGUITY!) using pipe syntax
+              -- Add FK display column with clean alias: ReferencedTable_BestDisplayColumn
               SET @SelectClause = @SelectClause +
                   CASE WHEN @SelectClause = '' THEN '' ELSE ',' + CHAR(13) + CHAR(10) + '    ' END +
-                  QUOTENAME(@ReferencedTableName + '_' + @BestDisplayColumn + '|' + @ReferencedTableName + ' ' + @BestDisplayColumn) + ' = ' + @PKTable + '.' +
+                  QUOTENAME(@ReferencedTableName + '_' + @BestDisplayColumn) + ' = ' + @PKTable + '.' +
   QUOTENAME(@BestDisplayColumn);
 
-              -- Add to FK columns for end with assignment syntax (NO AMBIGUITY!) using pipe syntax
+              -- Add FK raw key column at end, clean alias
               SET @FKColumnsAtEnd = @FKColumnsAtEnd +
                   CASE WHEN @FKColumnsAtEnd = '' THEN '' ELSE ',' + CHAR(13) + CHAR(10) + '    ' END +
-                  QUOTENAME(@ColumnName + '|' + [SqlXl].PascalCaseToLabel(@ColumnName)) + ' = ' + @FullTableName + '.' + QUOTENAME(@ColumnName);
+                  QUOTENAME(@ColumnName) + ' = ' + @FullTableName + '.' + QUOTENAME(@ColumnName);
 
               -- Add JOIN clause
               SET @JoinClause = @JoinClause + CHAR(13) + CHAR(10) +
@@ -1174,10 +1173,10 @@ CREATE FUNCTION [SqlXl].[GenerateDisplayViewSQL]
           END
           ELSE
           BEGIN
-              -- Regular column: Use assignment syntax with full qualification (NO AMBIGUITY!) using pipe syntax
+              -- Regular column: clean alias, no pipe syntax
               SET @SelectClause = @SelectClause +
                   CASE WHEN @SelectClause = '' THEN '' ELSE ',' + CHAR(13) + CHAR(10) + '    ' END +
-                  QUOTENAME(@ColumnName + '|' + [SqlXl].PascalCaseToLabel(@ColumnName)) + ' = ' + @FullTableName + '.' + QUOTENAME(@ColumnName);
+                  QUOTENAME(@ColumnName) + ' = ' + @FullTableName + '.' + QUOTENAME(@ColumnName);
           END
 
           FETCH NEXT FROM column_cursor INTO @ColumnName, @OrdinalPosition, @IsNullable, @IsFK, @PKTable, @PKColumn,
