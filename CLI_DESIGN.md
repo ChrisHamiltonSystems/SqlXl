@@ -1,5 +1,12 @@
 # SqlXL CLI Design
 
+## Audience
+
+- **Developer** — the person building and maintaining SqlXL (currently one person)
+- **User** — a SQL Server professional who has installed SqlXL and is using it against their own databases
+
+---
+
 ## Core UX Philosophy
 
 **Progressive disclosure.** The tool is immediately useful with zero configuration.
@@ -11,6 +18,66 @@ A well-defined table *is* the specification. SqlXL treats it as ground truth.
 **The `--file` flag is the mode switch** — its presence or absence determines whether
 a command is in export (give me a template) or import (here is my data) mode.
 The command name stays the same throughout the entire workflow. Minimal cognitive load.
+
+---
+
+## First-Time Setup UX
+
+**The full first-time experience for a new user:**
+
+```bash
+dotnet tool install --global SqlXl      # 1. install the tool
+sqlxl init --connection "Server=..."    # 2. configure connection + install DB infrastructure
+sqlxl insert --table dbo.Products       # 3. start working
+```
+
+**Alternatively, for users who want to explore before touching their own database:**
+
+```bash
+dotnet tool install --global SqlXl                              # 1. install the tool
+sqlxl demo --connection "Server=...;Database=SqlXlDemo;..."    # 2. spin up a demo database
+sqlxl insert --table dbo.Products                               # 3. start working against demo data
+```
+
+### `sqlxl init`
+
+Bootstraps SqlXL against a target SQL Server database.
+
+```bash
+sqlxl init --connection "Server=myserver;Database=MyDB;Integrated Security=true;TrustServerCertificate=true;"
+```
+
+**What it does:**
+1. Connects to the target database using the supplied connection string
+2. Checks whether SqlXL infrastructure already exists (idempotent — safe to re-run)
+3. Installs or upgrades the infrastructure if needed (schemas, tables, sprocs, functions)
+4. Persists the connection string as the default for future commands
+
+**Key design decisions:**
+- The SQL infrastructure script is an **embedded resource** inside the C# assembly — users never see or manually run a `.sql` file
+- `init` is idempotent — re-running it against an already-configured database is safe
+- After `init`, no `--connection` flag is needed for subsequent commands (uses persisted default)
+- Infrastructure is versioned via a `ZZ_SqlXl.SchemaVersion` table — `init` checks the installed version against the embedded version and upgrades if needed, so users never have to manually re-run SQL scripts across releases
+
+### `sqlxl demo`
+
+Creates a self-contained demo database with realistic sample data. Serves users who want to explore SqlXL before touching their own databases, and is also the developer's own test environment.
+
+```bash
+sqlxl demo --connection "Server=localhost;Database=SqlXlDemo;Integrated Security=true;TrustServerCertificate=true;"
+```
+
+**What it does:**
+1. Creates the target database if it does not exist
+2. Installs the SqlXL infrastructure (same as `init`)
+3. Creates sample domain tables (e.g., Products, Categories) with realistic data
+4. Configures BulkOpFeature rows for the sample tables so all three tiers work out of the box
+
+**Key design decisions:**
+- The demo database script is an **embedded resource** inside the C# assembly, just like the infrastructure script
+- `demo` is idempotent — safe to re-run; resets demo data to a known state
+- The same script serves as the developer's test environment and as the user-facing demo — one artifact, two audiences
+- Source file: `src/SqlXl/sql/CreateDemoDatabase.sql`
 
 ---
 
@@ -80,7 +147,7 @@ Command: `import`
 - BulkOpFeature config drives the template: column display names, FK dropdowns,
   sheet protection, custom processing sproc, etc.
 - Custom processing sproc can insert/update/delete across one or many tables —
-  literally anything the developer wants to do
+  literally anything the user wants to do
 - Validation: if input data is not 100% valid, the tool rolls back and returns
   detailed row-level error messages
 
@@ -155,6 +222,16 @@ Do not extend them — delete and rebuild as `InsertCommand`, `UpdateCommand`, `
 
 ---
 
+## Unsupported SQL Column Types
+
+The following SQL Server column types are **not supported** by SqlXL and should never appear in tables used with this tool:
+
+- `BINARY` / `VARBINARY` — fixed and variable-length binary data
+
+Tables containing these types will not work correctly with the Excel import/export pipeline. Document this clearly in user-facing docs when the time comes.
+
+---
+
 ## Open Questions / Future Considerations
 
 - Default output filename convention when `--output` is not specified
@@ -166,5 +243,5 @@ Do not extend them — delete and rebuild as `InsertCommand`, `UpdateCommand`, `
 
 ---
 
-*Last updated: 2026-04-03*
+*Last updated: 2026-04-10*
 *Status: Design agreed, not yet implemented*
