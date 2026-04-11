@@ -462,6 +462,24 @@ public class DataService
         }
     }
 
+    /// <summary>
+    /// Validates and executes a SELECT statement via SqlXl.ValidateThenRunSelectStatement,
+    /// returning the result as a DataTable. Requires SqlXl infrastructure (sqlxl init).
+    /// </summary>
+    public DataTable ExecuteSelectQuery(string sql)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        connection.Open();
+        using var command = new SqlCommand("[SqlXl].[ValidateThenRunSelectStatement]", connection);
+        command.CommandType = System.Data.CommandType.StoredProcedure;
+        command.CommandTimeout = 120;
+        command.Parameters.AddWithValue("@SelectStatement", sql);
+        using var adapter = new SqlDataAdapter(command);
+        var table = new DataTable();
+        adapter.Fill(table);
+        return table;
+    }
+
     public DataTable GetDropdownOptionsForFeature(int featureID)
     {
         using (var connection = new SqlConnection(_connectionString))

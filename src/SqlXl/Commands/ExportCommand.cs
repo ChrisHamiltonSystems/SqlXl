@@ -4,7 +4,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using SqlXl.Core;
-using SqlXl.Models;
 
 namespace SqlXl.Commands;
 
@@ -12,35 +11,34 @@ public class ExportCommand : Command<ExportCommand.Settings>
 {
     public class Settings : CommandSettings
     {
-        [CommandOption("--feature <ID>")]
-        [Description("BulkOpFeature ID from SqlXl.BulkOpFeatures")]
-        public int? FeatureId { get; set; }
+        [CommandOption("--query <SQL>")]
+        [Description("SELECT statement to export (validated via SqlXl infrastructure before execution)")]
+        public string Query { get; set; } = string.Empty;
 
         [CommandOption("--output <FILE>")]
-        [Description("Output Excel file path (e.g., products.xlsx)")]
+        [Description("Output Excel file path (optional; defaults to export_YYYYMMDD_HHmmss.xlsx)")]
         public string OutputPath { get; set; } = string.Empty;
-
-        [CommandOption("--ids <IDS>")]
-        [Description("Comma-separated primary key IDs to populate (for UPDATE features)")]
-        public string SelectedIds { get; set; } = string.Empty;
 
         [CommandOption("--connection <CONNSTR>")]
         [Description("SQL Server connection string")]
-        public string ConnectionString { get; set; } = "Data Source=localhost;Database=TestDatabase001;Integrated Security=true;TrustServerCertificate=true;";
+        public string ConnectionString { get; set; } = "Data Source=localhost;Database=SqlXlDemo;Integrated Security=true;TrustServerCertificate=true;";
+
+        [CommandOption("--no-launch")]
+        [Description("Do not open the generated Excel file (useful for agents and scripts)")]
+        public bool NoLaunch { get; set; }
 
         public override ValidationResult Validate()
         {
-            if (FeatureId == null)
-                return ValidationResult.Error("--feature is required");
-            if (string.IsNullOrWhiteSpace(OutputPath))
-                return ValidationResult.Error("--output is required");
+            if (string.IsNullOrWhiteSpace(Query))
+                return ValidationResult.Error("--query is required");
             return ValidationResult.Success();
         }
     }
 
     public override int Execute(CommandContext context, Settings settings)
     {
-        AnsiConsole.MarkupLine($"Exporting data for Feature ID [yellow]{settings.FeatureId}[/]...");
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("Exporting query results to Excel...");
         AnsiConsole.WriteLine();
 
         try
@@ -48,43 +46,35 @@ public class ExportCommand : Command<ExportCommand.Settings>
             var cache = new MemoryCache(new MemoryCacheOptions());
             var dataService = new DataService(settings.ConnectionString, cache);
 
-            BulkOpFeature feature = null;
-            AnsiConsole.Status().Start("Fetching feature metadata...", ctx =>
+            DataTable data = null;
+            AnsiConsole.Status().Start("Validating and executing query...", ctx =>
             {
-                feature = dataService.GetBulkOpFeature(settings.FeatureId!.Value);
-            });
-
-            if (feature == null)
-            {
-                AnsiConsole.MarkupLine($"[red]Error:[/] BulkOpFeature with ID {settings.FeatureId} not found.");
-                return 1;
-            }
-
-            AnsiConsole.MarkupLine($"Feature:  [cyan]{Markup.Escape(feature.UserFriendlyFeatureName)}[/]");
-            AnsiConsole.MarkupLine($"Type:     [cyan]{Markup.Escape(feature.InsertUpdateDeleteOrCustom)}[/]");
-            AnsiConsole.MarkupLine($"Table:    [cyan]{Markup.Escape(feature.DomainSchemaName)}.{Markup.Escape(feature.DomainTableName)}[/]");
-            AnsiConsole.WriteLine();
-
-            DataSet templateData = null;
-            AnsiConsole.Status().Start("Fetching template data from SQL Server...", ctx =>
-            {
-                string selectedIds = string.IsNullOrWhiteSpace(settings.SelectedIds) ? null : settings.SelectedIds;
-                templateData = dataService.CallGetExcelTemplateDataSproc(settings.FeatureId!.Value, selectedIds);
+                data = dataService.ExecuteSelectQuery(settings.Query);
             });
 
             byte[] excelBytes = null;
             AnsiConsole.Status().Start("Generating Excel file...", ctx =>
             {
                 var generator = new ExcelTemplateGenerator();
-                excelBytes = generator.GenerateExcelTemplate(templateData);
+                excelBytes = generator.GenerateSimpleExcel(data);
             });
 
-            File.WriteAllBytes(settings.OutputPath, excelBytes);
+            string outputPath = string.IsNullOrWhiteSpace(settings.OutputPath)
+                ? $"export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx"
+                : settings.OutputPath;
 
-            AnsiConsole.MarkupLine($"[green]Excel file generated successfully![/]");
-            AnsiConsole.MarkupLine($"File:     [cyan]{Markup.Escape(Path.GetFullPath(settings.OutputPath))}[/]");
-            AnsiConsole.MarkupLine($"Rows:     [cyan]{templateData.Tables[0].Rows.Count}[/]");
-            AnsiConsole.MarkupLine($"Columns:  [cyan]{templateData.Tables[0].Columns.Count}[/]");
+            File.WriteAllBytes(outputPath, excelBytes);
+
+            AnsiConsole.MarkupLine("[green]Export complete![/]");
+            AnsiConsole.MarkupLine($"File:     [cyan]{Markup.Escape(Path.GetFullPath(outputPath))}[/]");
+            AnsiConsole.MarkupLine($"Rows:     [cyan]{data.Rows.Count}[/]");
+            AnsiConsole.MarkupLine($"Columns:  [cyan]{data.Columns.Count}[/]");
+            AnsiConsole.WriteLine();
+
+            if (!settings.NoLaunch)
+                System.Diagnostics.Process.Start(
+                    new System.Diagnostics.ProcessStartInfo(Path.GetFullPath(outputPath))
+                    { UseShellExecute = true });
 
             return 0;
         }
@@ -92,7 +82,7 @@ public class ExportCommand : Command<ExportCommand.Settings>
         {
             AnsiConsole.MarkupLine($"[red]Error:[/] {Markup.Escape(ex.Message)}");
             AnsiConsole.WriteException(ex);
-            return 1;
+            return 2;
         }
     }
 }

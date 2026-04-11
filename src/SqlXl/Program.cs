@@ -16,7 +16,7 @@ app.Configure(config =>
     config.AddCommand<DemoCommand>("demo")
         .WithDescription("Create the SqlXlDemo database with sample data (drops and recreates)");
     config.AddCommand<ExportCommand>("export")
-        .WithDescription("Get Excel template starting point file for a BulkOpFeature");
+        .WithDescription("Export SQL query results to Excel (requires sqlxl init)");
     config.AddCommand<ImportCommand>("import")
         .WithDescription("Import Excel template file (with data) to SQL Server via a BulkOpFeature");
 });

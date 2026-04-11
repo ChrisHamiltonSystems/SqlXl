@@ -30,6 +30,19 @@ public class ExcelTemplateGenerator
         return stream.ToArray();
     }
 
+    // Generates a plain single-sheet Excel from any DataTable — no template structure,
+    // no DropdownOptions, no Metadata. Used by the export command for raw query dumps.
+    public byte[] GenerateSimpleExcel(DataTable data)
+    {
+        using var workbook = new XLWorkbook();
+        var ws = workbook.Worksheets.Add("Data");
+        CreateDataSheet(ws, data, pkColumn: null);
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return stream.ToArray();
+    }
+
     private string FindPrimaryKeyColumn(DataTable metaColumnsTable)
     {
         if (metaColumnsTable == null) return null;
