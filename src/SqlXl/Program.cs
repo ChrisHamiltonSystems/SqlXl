@@ -9,6 +9,8 @@ var app = new CommandApp();
 app.Configure(config =>
 {
     config.SetApplicationName("sqlxl");
+    config.AddCommand<TestCommand>("test")
+        .WithDescription("Auto-generate and run test data against all configured features for a table");
     config.AddCommand<InsertCommand>("insert")
         .WithDescription("Generate an INSERT template or import a filled template into a table");
     config.AddCommand<InitCommand>("init")

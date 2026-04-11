@@ -321,6 +321,37 @@ public class DataService
     }//end method
 
     /// <summary>
+    /// Returns all BulkOpFeature rows configured for a given table, regardless of operation type.
+    /// </summary>
+    public List<BulkOpFeature> GetAllBulkOpFeaturesForTable(string schemaName, string tableName)
+    {
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            const string query = @"
+                SELECT
+                    ID,
+                    UserFriendlyFeatureName,
+                    InsertUpdateDeleteOrCustom,
+                    DomainSchemaName,
+                    DomainTableName,
+                    StagingSchemaName,
+                    StagingTableName,
+                    GetRowsToChooseFrom_SelectStatement,
+                    GetRowsToEdit_SelectStatement,
+                    SprocToProcessPerfectStagedData,
+                    MenuDisplayRanking
+                FROM SqlXl.BulkOpFeatures
+                WHERE DomainSchemaName = @SchemaName
+                  AND DomainTableName  = @TableName";
+            return connection.Query<BulkOpFeature>(query, new
+            {
+                SchemaName = schemaName,
+                TableName  = tableName
+            }).ToList();
+        }
+    }
+
+    /// <summary>
     /// Looks up an existing BulkOpFeature by table and operation type.
     /// Returns null if no matching feature exists.
     /// </summary>
