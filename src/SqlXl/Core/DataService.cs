@@ -320,6 +320,61 @@ public class DataService
         return dataSet; // Return the populated DataSet
     }//end method
 
+    /// <summary>
+    /// Looks up an existing BulkOpFeature by table and operation type.
+    /// Returns null if no matching feature exists.
+    /// </summary>
+    public BulkOpFeature GetBulkOpFeatureForTable(string schemaName, string tableName, string insertOrUpdate)
+    {
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            const string query = @"
+                SELECT
+                    ID,
+                    UserFriendlyFeatureName,
+                    InsertUpdateDeleteOrCustom,
+                    DomainSchemaName,
+                    DomainTableName,
+                    StagingSchemaName,
+                    StagingTableName,
+                    GetRowsToChooseFrom_SelectStatement,
+                    GetRowsToEdit_SelectStatement,
+                    SprocToProcessPerfectStagedData,
+                    MenuDisplayRanking
+                FROM SqlXl.BulkOpFeatures
+                WHERE DomainSchemaName = @SchemaName
+                  AND DomainTableName  = @TableName
+                  AND InsertUpdateDeleteOrCustom = @InsertOrUpdate";
+            return connection.QuerySingleOrDefault<BulkOpFeature>(query, new
+            {
+                SchemaName    = schemaName,
+                TableName     = tableName,
+                InsertOrUpdate = insertOrUpdate
+            });
+        }
+    }
+
+    /// <summary>
+    /// Calls ScaffoldAn_INSERT_Feature to create the staging table, processing sproc,
+    /// and BulkOpFeature row for the given domain table. Safe to call only when no
+    /// feature exists yet for this table.
+    /// </summary>
+    public void ScaffoldInsertFeature(string schemaName, string tableName)
+    {
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            connection.Open();
+            using (var command = new SqlCommand("[SqlXl].[ScaffoldAn_INSERT_Feature]", connection))
+            {
+                command.CommandType = CommandType.StoredProcedure;
+                command.CommandTimeout = 60;
+                command.Parameters.AddWithValue("@DomainSchemaName", schemaName);
+                command.Parameters.AddWithValue("@DomainTableName",  tableName);
+                command.ExecuteNonQuery();
+            }
+        }
+    }
+
     public DataTable GetDropdownOptionsForFeature(int featureID)
     {
         using (var connection = new SqlConnection(_connectionString))

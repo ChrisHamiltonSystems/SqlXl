@@ -234,6 +234,12 @@ Tables containing these types will not work correctly with the Excel import/expo
 
 ## Open Questions / Future Considerations
 
+- **Schema drift (important, deferred):** When a domain table's columns change after
+  `ScaffoldAn_INSERT_Feature` has already run, the scaffolded staging table, sproc, and
+  BulkOpFeature row will be out of sync. The fix is likely a `sqlxl refresh --table dbo.Products`
+  command that re-runs scaffolding safely (drop/recreate staging table, replace sproc, update
+  BulkOpFeature row). Not a v0.1 concern — address when real users hit it.
+
 - Default output filename convention when `--output` is not specified
   (e.g., `Products_insert_YYYYMMDD.xlsx`?)
 - `--where` quoting docs — shell quoting of SQL fragments needs clear guidance
