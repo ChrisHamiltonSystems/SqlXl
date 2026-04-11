@@ -9,6 +9,8 @@ var app = new CommandApp();
 app.Configure(config =>
 {
     config.SetApplicationName("sqlxl");
+    config.AddCommand<InitCommand>("init")
+        .WithDescription("Install SqlXL infrastructure into an existing SQL Server database");
     config.AddCommand<DemoCommand>("demo")
         .WithDescription("Create the SqlXlDemo database with sample data (drops and recreates)");
     config.AddCommand<ExportCommand>("export")

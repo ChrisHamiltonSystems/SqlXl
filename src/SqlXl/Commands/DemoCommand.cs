@@ -1,9 +1,8 @@
 using System.ComponentModel;
-using System.Reflection;
-using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using SqlXl.Helpers;
 
 namespace SqlXl.Commands;
 
@@ -39,33 +38,29 @@ public class DemoCommand : Command<DemoCommand.Settings>
 
         try
         {
-            // Connect to master — the script drops/recreates SqlXlDemo,
-            // so we cannot be connected to SqlXlDemo itself.
-            var csb = new SqlConnectionStringBuilder(settings.ConnectionString);
-            csb.InitialCatalog = "master";
-            string masterConnStr = csb.ConnectionString;
+            // Step 1: run CreateDemoDatabase.sql against master
+            // (the script drops and recreates SqlXlDemo, so we can't be connected to it)
+            var masterConnStr = SwapDatabase(settings.ConnectionString, "master");
 
-            string sql = LoadEmbeddedSql("SqlXl.sql.CreateDemoDatabase.sql");
-            string[] batches = SplitOnGo(sql);
-
-            AnsiConsole.Status().Start("Creating SqlXlDemo database...", ctx =>
+            AnsiConsole.Status().Start("Creating SqlXlDemo database and sample data...", ctx =>
             {
-                using var conn = new SqlConnection(masterConnStr);
-                conn.Open();
-
-                foreach (string batch in batches)
-                {
-                    if (string.IsNullOrWhiteSpace(batch)) continue;
-                    using var cmd = new SqlCommand(batch, conn);
-                    cmd.CommandTimeout = 60;
-                    cmd.ExecuteNonQuery();
-                }
+                SqlScriptExecutor.ExecuteEmbeddedScript("SqlXl.sql.CreateDemoDatabase.sql", masterConnStr);
             });
 
-            AnsiConsole.MarkupLine("[green]SqlXlDemo created successfully![/]");
+            AnsiConsole.MarkupLine("[green]  SqlXlDemo database created.[/]");
+
+            // Step 2: run CreateInfrastructure.sql against SqlXlDemo
+            var demoConnStr = SwapDatabase(settings.ConnectionString, "SqlXlDemo");
+
+            AnsiConsole.Status().Start("Installing SqlXL infrastructure...", ctx =>
+            {
+                SqlScriptExecutor.ExecuteEmbeddedScript("SqlXl.sql.CreateInfrastructure.sql", demoConnStr);
+            });
+
+            AnsiConsole.MarkupLine("[green]  SqlXL infrastructure installed.[/]");
             AnsiConsole.WriteLine();
-            AnsiConsole.MarkupLine("You can now run commands against it, for example:");
-            AnsiConsole.MarkupLine($"  [cyan]sqlxl insert --table dbo.Products --connection \"{BuildDemoConnStr(settings.ConnectionString)}\"[/]");
+            AnsiConsole.MarkupLine("[green]SqlXlDemo is ready![/] You can now run commands against it, for example:");
+            AnsiConsole.MarkupLine($"  [cyan]sqlxl insert --table dbo.Products --connection \"{demoConnStr}\"[/]");
             AnsiConsole.WriteLine();
 
             return 0;
@@ -78,22 +73,10 @@ public class DemoCommand : Command<DemoCommand.Settings>
         }
     }
 
-    private static string LoadEmbeddedSql(string resourceName)
+    private static string SwapDatabase(string connectionString, string database)
     {
-        var asm = Assembly.GetExecutingAssembly();
-        using var stream = asm.GetManifestResourceStream(resourceName)
-            ?? throw new InvalidOperationException($"Embedded resource not found: {resourceName}");
-        using var reader = new StreamReader(stream);
-        return reader.ReadToEnd();
-    }
-
-    private static string[] SplitOnGo(string sql) =>
-        Regex.Split(sql, @"^\s*GO\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase);
-
-    private static string BuildDemoConnStr(string original)
-    {
-        var csb = new SqlConnectionStringBuilder(original);
-        csb.InitialCatalog = "SqlXlDemo";
+        var csb = new SqlConnectionStringBuilder(connectionString);
+        csb.InitialCatalog = database;
         return csb.ConnectionString;
     }
 }
