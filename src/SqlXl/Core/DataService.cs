@@ -386,6 +386,62 @@ public class DataService
     }
 
     /// <summary>
+    /// Calls ScaffoldAn_UPDATE_Feature to create the staging table, processing sproc,
+    /// and BulkOpFeature row for the given domain table. Safe to call only when no
+    /// feature exists yet for this table.
+    /// </summary>
+    public void ScaffoldUpdateFeature(string schemaName, string tableName)
+    {
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            connection.Open();
+            using (var command = new SqlCommand("[SqlXl].[ScaffoldAn_UPDATE_Feature]", connection))
+            {
+                command.CommandType = CommandType.StoredProcedure;
+                command.CommandTimeout = 60;
+                command.Parameters.AddWithValue("@DomainSchemaName", schemaName);
+                command.Parameters.AddWithValue("@DomainTableName",  tableName);
+                command.ExecuteNonQuery();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Returns the primary key column name for the given table by calling
+    /// SqlXl.GetPrimaryKeyColumnName — never derived from user input.
+    /// </summary>
+    public string GetPrimaryKeyColumnName(string schemaName, string tableName)
+    {
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            const string sql = "SELECT SqlXl.GetPrimaryKeyColumnName(@Schema, @Table)";
+            return connection.ExecuteScalar<string>(sql, new { Schema = schemaName, Table = tableName });
+        }
+    }
+
+    /// <summary>
+    /// Executes SELECT {pkColumn} FROM {schema}.{table} WHERE {whereClause} and returns
+    /// the matching PK values as a comma-separated string suitable for GetExcelTemplateData.
+    /// Schema, table, and PK column are DB-sourced — only whereClause comes from the user.
+    /// </summary>
+    public string GetPrimaryKeyIdsForWhere(string schemaName, string tableName, string pkColumn, string whereClause)
+    {
+        // QUOTENAME on schema/table/pk — all DB-sourced, no user input in identifiers.
+        // whereClause is user-supplied SQL executed as a scalar SELECT — same trust model
+        // as SSMS or sqlcmd. User already has direct DB access.
+        string sql = $"SELECT CAST([{pkColumn}] AS NVARCHAR(MAX)) " +
+                     $"FROM [{schemaName}].[{tableName}] " +
+                     $"WHERE {whereClause}";
+
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            var ids = connection.Query<string>(sql).ToList();
+            if (ids.Count == 0) return null;
+            return string.Join(",", ids);
+        }
+    }
+
+    /// <summary>
     /// Calls ScaffoldAn_INSERT_Feature to create the staging table, processing sproc,
     /// and BulkOpFeature row for the given domain table. Safe to call only when no
     /// feature exists yet for this table.
