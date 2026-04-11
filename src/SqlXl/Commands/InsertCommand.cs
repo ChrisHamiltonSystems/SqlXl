@@ -28,6 +28,10 @@ public class InsertCommand : Command<InsertCommand.Settings>
         [Description("SQL Server connection string")]
         public string ConnectionString { get; set; } = "Data Source=localhost;Database=SqlXlDemo;Integrated Security=true;TrustServerCertificate=true;";
 
+        [CommandOption("--no-launch")]
+        [Description("Do not open the generated Excel file (useful for agents and scripts)")]
+        public bool NoLaunch { get; set; }
+
         public override ValidationResult Validate()
         {
             if (string.IsNullOrWhiteSpace(Table))
@@ -116,8 +120,11 @@ public class InsertCommand : Command<InsertCommand.Settings>
         AnsiConsole.MarkupLine($"Columns:  [cyan]{templateData.Tables[0].Columns.Count}[/]");
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("Fill in the template then run:");
-        AnsiConsole.MarkupLine($"  [cyan]sqlxl insert --table {Markup.Escape(settings.Table)} --file {Markup.Escape(outputPath)}[/]");
+        AnsiConsole.MarkupLine($"  [cyan]sqlxl insert --table {Markup.Escape(settings.Table)} --file {Markup.Escape(outputPath)} --no-launch[/]");
         AnsiConsole.WriteLine();
+
+        if (!settings.NoLaunch)
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Path.GetFullPath(outputPath)) { UseShellExecute = true });
 
         return 0;
     }
