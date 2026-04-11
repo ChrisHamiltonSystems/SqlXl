@@ -1,9 +1,5 @@
-using OfficeOpenXml;
 using Spectre.Console.Cli;
 using SqlXl.Commands;
-
-// EPPlus license - set for non-commercial personal use (free)
-ExcelPackage.License.SetNonCommercialPersonal("SqlXl");
 
 var app = new CommandApp();
 app.Configure(config =>

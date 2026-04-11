@@ -1,4 +1,4 @@
-﻿using OfficeOpenXml;
+using ClosedXML.Excel;
 using System.Data;
 using System.Text.RegularExpressions;
 
@@ -15,65 +15,29 @@ public class ExcelImporter
         public int EmptyRowsSkipped { get; set; }
     }
 
-    // ============================================================================
-    // IMPORTANT: EPPlus License Configuration Required!
-    // ============================================================================
-    // EPPlus 8.x requires you to set a license before use.
-    //
-    // FOR PERSONAL NON-COMMERCIAL USE (free):
-    //     ExcelPackage.License.SetNonCommercialPersonal("Your Name");
-    //
-    // FOR NON-COMMERCIAL ORGANIZATION (free):
-    //     ExcelPackage.License.SetNonCommercialOrganization("Organization Name");
-    //
-    // FOR COMMERCIAL USE (requires paid license from https://epplussoftware.com):
-    //     ExcelPackage.License.SetCommercial("<Your License Key>");
-    //
-    // Recommended: Set this once in your application startup (Program.cs or Startup.cs)
-    // instead of in this static constructor.
-    // See: https://github.com/EPPlusSoftware/EPPlus/wiki/LicenseException
-    // ============================================================================
-
-    static ExcelImporter()
-    {
-        // TODO: REQUIRED - Uncomment the appropriate line below based on your usage:
-        // ExcelPackage.License.SetNonCommercialPersonal("Your Name");              // Free - Personal use
-        // ExcelPackage.License.SetNonCommercialOrganization("Organization Name");  // Free - Organization
-        // ExcelPackage.License.SetCommercial("<Your License Key>");                // Paid - Commercial
-    }
-
     public ImportResult ImportFromExcel(byte[] excelFileBytes, DataTable expectedStructure, DataTable dropdownOptions = null)
     {
         var result = new ImportResult();
 
         try
         {
-            using (var package = new ExcelPackage(new MemoryStream(excelFileBytes)))
+            using var workbook = new XLWorkbook(new MemoryStream(excelFileBytes));
+
+            var dataWorksheet = workbook.Worksheets.FirstOrDefault(ws => ws.Name == "Data");
+            if (dataWorksheet == null)
             {
-                // Get the main data worksheet
-                var dataWorksheet = package.Workbook.Worksheets["Data"];
-                if (dataWorksheet == null)
-                {
-                    result.ValidationErrors.Add("Excel file must contain a 'Data' worksheet");
-                    return result;
-                }
-
-                // Get the metadata worksheet for column mapping
-                var metadataWorksheet = package.Workbook.Worksheets["Metadata"];
-                Dictionary<string, (string DbColumnName, string SqlDataType)> columnMapping = null;
-
-                if (metadataWorksheet != null)
-                {
-                    columnMapping = ReadMetadataMapping(metadataWorksheet);
-                }
-                else
-                {
-                    result.ValidationErrors.Add("Warning: Metadata sheet not found in Excel file");
-                }
-
-                // Validate and import the data
-                result = ProcessDataWorksheet(dataWorksheet, expectedStructure, dropdownOptions, columnMapping);
+                result.ValidationErrors.Add("Excel file must contain a 'Data' worksheet");
+                return result;
             }
+
+            Dictionary<string, (string DbColumnName, string SqlDataType)> columnMapping = null;
+            var metadataWorksheet = workbook.Worksheets.FirstOrDefault(ws => ws.Name == "Metadata");
+            if (metadataWorksheet != null)
+                columnMapping = ReadMetadataMapping(metadataWorksheet);
+            else
+                result.ValidationErrors.Add("Warning: Metadata sheet not found in Excel file");
+
+            result = ProcessDataWorksheet(dataWorksheet, expectedStructure, dropdownOptions, columnMapping);
         }
         catch (Exception ex)
         {
@@ -84,38 +48,34 @@ public class ExcelImporter
         return result;
     }
 
-    private Dictionary<string, (string DbColumnName, string SqlDataType)> ReadMetadataMapping(ExcelWorksheet metadataWorksheet)
+    private Dictionary<string, (string DbColumnName, string SqlDataType)> ReadMetadataMapping(IXLWorksheet ws)
     {
-        // Returns a mapping: ExcelColumnName -> (DbColumnName, SqlDataType)
+        // Returns: ExcelColumnName -> (DbColumnName, SqlDataType)
         var mapping = new Dictionary<string, (string, string)>(StringComparer.OrdinalIgnoreCase);
 
-        if (metadataWorksheet == null || metadataWorksheet.Dimension == null)
-            return mapping;
-
-        // Read from row 2 onwards (row 1 is headers: DbColumnName, ExcelColumnName, SqlDataType)
-        for (int row = 2; row <= metadataWorksheet.Dimension.Rows; row++)
+        int lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+        for (int row = 2; row <= lastRow; row++)
         {
-            var dbColumnName = metadataWorksheet.Cells[row, 1].Value?.ToString();
-            var excelColumnName = metadataWorksheet.Cells[row, 2].Value?.ToString();
-            var sqlDataType = metadataWorksheet.Cells[row, 3].Value?.ToString() ?? "";
+            var dbColumnName   = ws.Cell(row, 1).GetValue<string>();
+            var excelColumnName = ws.Cell(row, 2).GetValue<string>();
+            var sqlDataType    = ws.Cell(row, 3).GetValue<string>() ?? "";
 
             if (!string.IsNullOrWhiteSpace(dbColumnName) && !string.IsNullOrWhiteSpace(excelColumnName))
-            {
                 mapping[excelColumnName] = (dbColumnName, sqlDataType);
-            }
         }
 
         return mapping;
     }
 
-    private ImportResult ProcessDataWorksheet(ExcelWorksheet worksheet, DataTable expectedStructure, DataTable dropdownOptions, Dictionary<string, (string DbColumnName, string SqlDataType)> columnMapping = null)
+    private ImportResult ProcessDataWorksheet(IXLWorksheet ws, DataTable expectedStructure,
+                                              DataTable dropdownOptions,
+                                              Dictionary<string, (string DbColumnName, string SqlDataType)> columnMapping)
     {
         var result = new ImportResult();
-
-        // Initialize the result DataTable with expected structure
         result.ImportedData = CreateEmptyDataTableFromStructure(expectedStructure);
 
-        if (worksheet.Dimension == null)
+        int lastRow = ws.LastRowUsed()?.RowNumber() ?? 0;
+        if (lastRow == 0)
         {
             result.ValidationErrors.Add("Data worksheet is empty");
             return result;
@@ -123,16 +83,11 @@ public class ExcelImporter
 
         try
         {
-            // Read and validate headers
-            var headerMapping = ValidateAndMapHeaders(worksheet, expectedStructure, result, columnMapping);
+            var headerMapping = ValidateAndMapHeaders(ws, expectedStructure, result, columnMapping);
             if (!result.IsSuccessful)
-            {
                 return result;
-            }
 
-            // Process data rows
-            ProcessDataRows(worksheet, headerMapping, result, dropdownOptions);
-
+            ProcessDataRows(ws, lastRow, headerMapping, result, dropdownOptions);
             result.IsSuccessful = result.ValidationErrors.Count == 0;
         }
         catch (Exception ex)
@@ -144,68 +99,60 @@ public class ExcelImporter
         return result;
     }
 
-    private Dictionary<int, (string DbColumnName, string SqlDataType)> ValidateAndMapHeaders(ExcelWorksheet worksheet, DataTable expectedStructure, ImportResult result, Dictionary<string, (string DbColumnName, string SqlDataType)> columnMapping = null)
+    private Dictionary<int, (string DbColumnName, string SqlDataType)> ValidateAndMapHeaders(
+        IXLWorksheet ws, DataTable expectedStructure, ImportResult result,
+        Dictionary<string, (string DbColumnName, string SqlDataType)> columnMapping)
     {
-        var headerMapping = new Dictionary<int, (string DbColumnName, string SqlDataType)>(); // Excel column index -> (DbColumnName, SqlDataType)
-        var foundHeaders = new HashSet<string>();
+        var headerMapping = new Dictionary<int, (string DbColumnName, string SqlDataType)>();
+        var foundHeaders  = new HashSet<string>();
 
-        // Read headers from row 1
-        for (int col = 1; col <= worksheet.Dimension.Columns; col++)
+        int lastCol = ws.Row(1).LastCellUsed()?.Address.ColumnNumber ?? 0;
+        for (int col = 1; col <= lastCol; col++)
         {
-            var headerValue = worksheet.Cells[1, col].Value?.ToString()?.Trim();
+            var headerValue = ws.Cell(1, col).GetValue<string>()?.Trim();
+            if (string.IsNullOrEmpty(headerValue)) continue;
 
-            if (!string.IsNullOrEmpty(headerValue))
+            // Try metadata mapping first (ExcelColumnName → DbColumnName + SqlDataType)
+            if (columnMapping != null && columnMapping.TryGetValue(headerValue, out var metadata))
             {
-                // First, try to map using metadata (Excel column name -> (DB column name, SQL type))
-                (string DbColumnName, string SqlDataType) metadata;
-                if (columnMapping != null && columnMapping.TryGetValue(headerValue, out metadata))
+                var matchingColumn = expectedStructure.Columns.Cast<DataColumn>()
+                    .FirstOrDefault(c => c.ColumnName.Equals(metadata.DbColumnName, StringComparison.OrdinalIgnoreCase));
+
+                if (matchingColumn != null)
                 {
-                    // Found in metadata mapping - use the DB column name and SQL type
-                    var matchingColumn = expectedStructure.Columns.Cast<DataColumn>()
-                        .FirstOrDefault(c => c.ColumnName.Equals(metadata.DbColumnName, StringComparison.OrdinalIgnoreCase));
-
-                    if (matchingColumn != null)
-                    {
-                        if (foundHeaders.Contains(matchingColumn.ColumnName))
-                        {
-                            result.ValidationErrors.Add($"Duplicate column found: {headerValue}");
-                            continue;
-                        }
-
-                        headerMapping[col] = (matchingColumn.ColumnName, metadata.SqlDataType);
-                        foundHeaders.Add(matchingColumn.ColumnName);
-                        continue;
-                    }
-                }
-
-                // Fallback: Find matching column directly (for backwards compatibility, no SQL type)
-                var matchingColumn2 = FindMatchingColumn(headerValue, expectedStructure);
-
-                if (matchingColumn2 != null)
-                {
-                    if (foundHeaders.Contains(matchingColumn2.ColumnName))
+                    if (foundHeaders.Contains(matchingColumn.ColumnName))
                     {
                         result.ValidationErrors.Add($"Duplicate column found: {headerValue}");
                         continue;
                     }
+                    headerMapping[col] = (matchingColumn.ColumnName, metadata.SqlDataType);
+                    foundHeaders.Add(matchingColumn.ColumnName);
+                    continue;
+                }
+            }
 
-                    headerMapping[col] = (matchingColumn2.ColumnName, ""); // No SQL type for fallback
-                    foundHeaders.Add(matchingColumn2.ColumnName);
-                }
-                else
+            // Fallback: direct column name match
+            var fallback = FindMatchingColumn(headerValue, expectedStructure);
+            if (fallback != null)
+            {
+                if (foundHeaders.Contains(fallback.ColumnName))
                 {
-                    result.ValidationErrors.Add($"Unknown column in Excel file: {headerValue}");
+                    result.ValidationErrors.Add($"Duplicate column found: {headerValue}");
+                    continue;
                 }
+                headerMapping[col] = (fallback.ColumnName, "");
+                foundHeaders.Add(fallback.ColumnName);
+            }
+            else
+            {
+                result.ValidationErrors.Add($"Unknown column in Excel file: {headerValue}");
             }
         }
 
-        // Check for missing required columns
         foreach (DataColumn expectedColumn in expectedStructure.Columns)
         {
             if (!foundHeaders.Contains(expectedColumn.ColumnName))
-            {
                 result.ValidationErrors.Add($"Required column missing from Excel file: {expectedColumn.ColumnName}");
-            }
         }
 
         result.IsSuccessful = result.ValidationErrors.Count == 0;
@@ -214,35 +161,25 @@ public class ExcelImporter
 
     private DataColumn FindMatchingColumn(string excelHeader, DataTable expectedStructure)
     {
-        // Direct match first
         foreach (DataColumn col in expectedStructure.Columns)
-        {
             if (string.Equals(col.ColumnName, excelHeader, StringComparison.OrdinalIgnoreCase))
-            {
                 return col;
-            }
-        }
 
-        // Handle pipe syntax matching (ColumnName|Display Name)
+        // Pipe-syntax fallback
         foreach (DataColumn col in expectedStructure.Columns)
-        {
-            var realColumnName = ExtractRealColumnName(col.ColumnName);
-            if (string.Equals(realColumnName, excelHeader, StringComparison.OrdinalIgnoreCase))
-            {
+            if (string.Equals(ExtractRealColumnName(col.ColumnName), excelHeader, StringComparison.OrdinalIgnoreCase))
                 return col;
-            }
-        }
 
         return null;
     }
 
-    private void ProcessDataRows(ExcelWorksheet worksheet, Dictionary<int, (string DbColumnName, string SqlDataType)> headerMapping, ImportResult result, DataTable dropdownOptions)
+    private void ProcessDataRows(IXLWorksheet ws, int lastRow,
+                                 Dictionary<int, (string DbColumnName, string SqlDataType)> headerMapping,
+                                 ImportResult result, DataTable dropdownOptions)
     {
-        // Start from row 2 (skip headers)
-        for (int row = 2; row <= worksheet.Dimension.Rows; row++)
+        for (int row = 2; row <= lastRow; row++)
         {
-            // Check if row is empty
-            if (IsRowEmpty(worksheet, row, headerMapping.Keys))
+            if (IsRowEmpty(ws, row, headerMapping.Keys))
             {
                 result.EmptyRowsSkipped++;
                 continue;
@@ -253,19 +190,17 @@ public class ExcelImporter
                 var dataRow = result.ImportedData.NewRow();
                 bool hasData = false;
 
-                // Process each mapped column
                 foreach (var mapping in headerMapping)
                 {
-                    int excelCol = mapping.Key;
-                    string dataTableCol = mapping.Value.DbColumnName;
+                    int    excelCol    = mapping.Key;
+                    string dbCol       = mapping.Value.DbColumnName;
                     string sqlDataType = mapping.Value.SqlDataType;
 
-                    var cellValue = worksheet.Cells[row, excelCol].Value;
-
+                    var cellValue = GetCellObject(ws.Cell(row, excelCol));
                     if (cellValue != null)
                     {
-                        var targetColumn = result.ImportedData.Columns[dataTableCol];
-                        dataRow[dataTableCol] = ConvertCellValue(cellValue, targetColumn, dropdownOptions, sqlDataType);
+                        var targetColumn = result.ImportedData.Columns[dbCol];
+                        dataRow[dbCol] = ConvertCellValue(cellValue, targetColumn, dropdownOptions, sqlDataType);
                         hasData = true;
                     }
                 }
@@ -287,15 +222,29 @@ public class ExcelImporter
         }
     }
 
-    private bool IsRowEmpty(ExcelWorksheet worksheet, int row, IEnumerable<int> columnsToCheck)
+    // Converts an XLCellValue to a plain CLR object so ConvertCellValue can work type-safely.
+    private object GetCellObject(IXLCell cell)
+    {
+        if (cell.IsEmpty()) return null;
+        return cell.DataType switch
+        {
+            XLDataType.Blank    => null,
+            XLDataType.Boolean  => (object)cell.GetValue<bool>(),
+            XLDataType.Number   => (object)cell.GetValue<double>(),
+            XLDataType.Text     => (object)cell.GetValue<string>(),
+            XLDataType.DateTime => (object)cell.GetValue<DateTime>(),
+            XLDataType.TimeSpan => (object)cell.GetValue<TimeSpan>().ToString(),
+            _                   => (object)cell.GetString()
+        };
+    }
+
+    private bool IsRowEmpty(IXLWorksheet ws, int row, IEnumerable<int> columnsToCheck)
     {
         foreach (int col in columnsToCheck)
         {
-            var value = worksheet.Cells[row, col].Value;
-            if (value != null && !string.IsNullOrWhiteSpace(value.ToString()))
-            {
+            var cell = ws.Cell(row, col);
+            if (!cell.IsEmpty() && !string.IsNullOrWhiteSpace(cell.GetString()))
                 return false;
-            }
         }
         return true;
     }
@@ -305,171 +254,106 @@ public class ExcelImporter
         if (cellValue == null)
             return DBNull.Value;
 
-        // Use SQL data type to determine proper conversion
         sqlDataType = sqlDataType?.ToLower() ?? "";
 
-        // Handle date/time types based on SQL type
+        // Date/time columns
         if (sqlDataType.Contains("date") || sqlDataType.Contains("time"))
         {
-            if (cellValue is DateTime dateTimeValue)
+            if (cellValue is DateTime dt)
+                return dt.ToString("yyyy-MM-ddTHH:mm:ss.fff");
+
+            if (cellValue is double d)
             {
-                // Format as ISO 8601 - SQL Server universal format
-                return dateTimeValue.ToString("yyyy-MM-ddTHH:mm:ss.fff");
-            }
-            else if (cellValue is double doubleValue)
-            {
-                try
-                {
-                    // Excel stores dates as OLE Automation date
-                    var excelDate = DateTime.FromOADate(doubleValue);
-                    return excelDate.ToString("yyyy-MM-ddTHH:mm:ss.fff");
-                }
-                catch
-                {
-                    // Not a valid date
-                    return cellValue.ToString().Trim();
-                }
+                try { return DateTime.FromOADate(d).ToString("yyyy-MM-ddTHH:mm:ss.fff"); }
+                catch { return cellValue.ToString().Trim(); }
             }
         }
 
-        // Handle numeric types - strip any formatting (commas, etc)
+        // Numeric columns — if ClosedXML gave us a native double, convert to string
         if (sqlDataType.Contains("int") || sqlDataType.Contains("decimal") ||
             sqlDataType.Contains("numeric") || sqlDataType.Contains("money") ||
             sqlDataType.Contains("float") || sqlDataType.Contains("real"))
         {
-            // For numeric types, EPPlus returns native types - convert to plain string
-            if (cellValue is int || cellValue is long || cellValue is short || cellValue is byte ||
-                cellValue is decimal || cellValue is double || cellValue is float)
-            {
-                // Return as string without any formatting
+            if (cellValue is double || cellValue is int || cellValue is long ||
+                cellValue is short || cellValue is byte || cellValue is decimal || cellValue is float)
                 return cellValue.ToString();
-            }
         }
 
         var stringValue = cellValue.ToString().Trim();
-
         if (string.IsNullOrEmpty(stringValue))
             return DBNull.Value;
 
-        // Check if this column has dropdown options (is a foreign key)
+        // FK columns — resolve display value back to the raw key
         var fkOptions = dropdownOptions?.AsEnumerable()
-            .Where(row => row.Field<string>("ForColumn") == targetColumn.ColumnName)
+            .Where(r => r.Field<string>("ForColumn") == targetColumn.ColumnName)
             .ToList();
 
         if (fkOptions != null && fkOptions.Any())
         {
-            // This is a foreign key column with dropdown options
-            // Try to extract the actual FK value from the display text
-            string extractedValue = ExtractForeignKeyValue(stringValue, fkOptions);
-            return extractedValue ?? stringValue; // Fall back to original if parsing fails
+            string extracted = ExtractForeignKeyValue(stringValue, fkOptions);
+            return extracted ?? stringValue;
         }
 
-        // For non-FK columns, return as-is
         return stringValue;
     }
 
     private string ExtractForeignKeyValue(string displayValue, List<DataRow> fkOptions)
     {
-        // First, try exact match with a dropdown option
-        var exactMatch = fkOptions.FirstOrDefault(row =>
-            string.Equals(row.Field<string>("Text"), displayValue, StringComparison.OrdinalIgnoreCase));
+        // Exact match against dropdown Text
+        var exact = fkOptions.FirstOrDefault(r =>
+            string.Equals(r.Field<string>("Text"), displayValue, StringComparison.OrdinalIgnoreCase));
+        if (exact != null) return exact.Field<string>("Value");
 
-        if (exactMatch != null)
+        // "1 - Electronics" pattern
+        var m = Regex.Match(displayValue, @"^(\d+)\s*[-\s]\s*(.+)$");
+        if (m.Success)
         {
-            return exactMatch.Field<string>("Value");
+            string id = m.Groups[1].Value;
+            if (fkOptions.Any(r => r.Field<string>("Value") == id)) return id;
         }
 
-        // If no exact match, try to parse "ID - Description" format
-        // Common patterns: "1 - HR Department", "1 HR Department", "1-HR Department"
-        var match = System.Text.RegularExpressions.Regex.Match(displayValue, @"^(\d+)\s*[-\s]\s*(.+)$");
-        if (match.Success)
+        // Leading digits fallback
+        var n = Regex.Match(displayValue, @"^(\d+)");
+        if (n.Success)
         {
-            string potentialId = match.Groups[1].Value;
-
-            // Verify this ID exists in the dropdown options
-            var validOption = fkOptions.FirstOrDefault(row =>
-                row.Field<string>("Value") == potentialId);
-
-            if (validOption != null)
-            {
-                return potentialId;
-            }
+            string id = n.Groups[1].Value;
+            if (fkOptions.Any(r => r.Field<string>("Value") == id)) return id;
         }
 
-        // Try just the beginning numbers (in case format is "1 HR Department")
-        var numberMatch = System.Text.RegularExpressions.Regex.Match(displayValue, @"^(\d+)");
-        if (numberMatch.Success)
-        {
-            string potentialId = numberMatch.Groups[1].Value;
-
-            var validOption = fkOptions.FirstOrDefault(row =>
-                row.Field<string>("Value") == potentialId);
-
-            if (validOption != null)
-            {
-                return potentialId;
-            }
-        }
-
-        // If all parsing fails, return null so caller can handle appropriately
         return null;
     }
 
     private DataTable CreateEmptyDataTableFromStructure(DataTable structure)
     {
         var result = new DataTable();
-
-        foreach (DataColumn sourceColumn in structure.Columns)
-        {
-            // Create new column with same name but as string type
-            // This matches how SqlXL processes data
-            result.Columns.Add(sourceColumn.ColumnName, typeof(string));
-        }
-
+        foreach (DataColumn col in structure.Columns)
+            result.Columns.Add(col.ColumnName, typeof(string));
         return result;
     }
 
     private string ExtractRealColumnName(string columnName)
     {
-        if (string.IsNullOrWhiteSpace(columnName))
-            return columnName;
-
-        // Split on pipe and take the first part (real column name)
-        var parts = columnName.Split('|', 2);
-        return parts[0].Trim();
+        if (string.IsNullOrWhiteSpace(columnName)) return columnName;
+        return columnName.Split('|', 2)[0].Trim();
     }
 
     public static bool IsValidExcelFile(byte[] fileBytes)
     {
         try
         {
-            using (var package = new ExcelPackage(new MemoryStream(fileBytes)))
-            {
-                return package.Workbook.Worksheets.Count > 0;
-            }
+            using var wb = new XLWorkbook(new MemoryStream(fileBytes));
+            return wb.Worksheets.Count > 0;
         }
-        catch
-        {
-            return false;
-        }
+        catch { return false; }
     }
 
     public static List<string> GetWorksheetNames(byte[] fileBytes)
     {
-        var worksheetNames = new List<string>();
-
         try
         {
-            using (var package = new ExcelPackage(new MemoryStream(fileBytes)))
-            {
-                worksheetNames.AddRange(package.Workbook.Worksheets.Select(ws => ws.Name));
-            }
+            using var wb = new XLWorkbook(new MemoryStream(fileBytes));
+            return wb.Worksheets.Select(ws => ws.Name).ToList();
         }
-        catch
-        {
-            // Return empty list if file can't be read
-        }
-
-        return worksheetNames;
+        catch { return new List<string>(); }
     }
 }
