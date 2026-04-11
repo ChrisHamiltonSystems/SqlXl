@@ -1,6 +1,6 @@
 ﻿namespace SqlXl.Models;
 public class BulkOpFeature
-{   /* Corresponds to table: ZZSqlXL.BulkOpFeatures */
+{   /* Corresponds to table: SqlXl.BulkOpFeatures */
     public int ID { get; set; }
 
     public string UserFriendlyFeatureName { get; set; }
