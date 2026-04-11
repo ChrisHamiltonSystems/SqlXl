@@ -72,10 +72,9 @@ columns: [
             // Apply dropdown validation to foreign key columns in Sheet1
             ApplyDropdownValidation(sheet1, sheet2, sheet3, templateData.Tables[1]);
 
-            // Set sheet protection on Data sheet (allows editing unlocked cells, blocks editing locked PK cells)
-            sheet1.Protection.IsProtected = true;
-            sheet1.Protection.AllowSelectLockedCells = true;
-            sheet1.Protection.AllowSelectUnlockedCells = true;
+            // Data sheet is intentionally NOT protected — users need full freedom to add/edit rows.
+            // PK cells on UPDATE templates are visually distinct (gray) as a hint only.
+            // Staging table validation is the real safety net, not Excel sheet protection.
 
             // Set sheet protection (make reference sheets completely read-only)
             sheet2.Protection.IsProtected = true;
