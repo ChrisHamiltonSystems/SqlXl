@@ -44,6 +44,9 @@ TestResults/
 *.trx
 *.coverage
 
+# Generated Excel files (tool output, not source)
+*.xlsx
+
 # OS files
 .DS_Store
 Thumbs.db
