@@ -234,6 +234,13 @@ Tables containing these types will not work correctly with the Excel import/expo
 
 ## Open Questions / Future Considerations
 
+- **`sqlxl test` and unique constraints (deferred):** The `GenerateTestData` SQL sproc uses
+  fixed `ValidSampleValue` entries from `Meta_Columns`. For INSERT features on tables with
+  unique non-PK columns, a second test run will always fail because the same sample value was
+  already committed by the first run. Workaround: reset with `sqlxl demo --yes` before each
+  test session. Long-term fix: make the sproc generate unique values (e.g. append a timestamp
+  to string columns) — but this is a core infrastructure change that needs careful vetting.
+
 - **Schema drift (important, deferred):** When a domain table's columns change after
   `ScaffoldAn_INSERT_Feature` has already run, the scaffolded staging table, sproc, and
   BulkOpFeature row will be out of sync. The fix is likely a `sqlxl refresh --table dbo.Products`

@@ -17,8 +17,8 @@ public class TestCommand : Command<TestCommand.Settings>
         public string Table { get; set; } = string.Empty;
 
         [CommandOption("--rows <N>")]
-        [Description("Number of test rows to generate per feature (default: 5, max: 100)")]
-        public int Rows { get; set; } = 5;
+        [Description("Number of test rows to generate per feature (default: 1, max: 100)")]
+        public int Rows { get; set; } = 1;
 
         [CommandOption("--connection <CONNSTR>")]
         [Description("SQL Server connection string")]
