@@ -109,16 +109,45 @@ sqlxl update --table dbo.Products --file updated-products.xlsx
 
 ### `sqlxl import`
 
-Escape hatch for fully custom, pre-configured BulkOpFeature scenarios.
-Supports insert/update/delete to one-or-many tables via a custom processing sproc.
+The power-user escape hatch. Where `insert` and `update` are table-centric and zero-config,
+`import` is fully custom — the SQL pro owns the staging table shape, the validation logic,
+and the processing sproc entirely. SqlXl just moves the data.
 
 ```bash
-# Export: generate template based on existing BulkOpFeature configuration
+# Export: generate template from the custom staging table shape
 sqlxl import --feature 7
 
-# Import: submit populated file against the configured feature
+# Import: submit populated file through the configured processing sproc
 sqlxl import --feature 7 --file data.xlsx
 ```
+
+#### The vision — why this command matters
+
+Consider a typical enterprise RBAC schema: a `Users` table, a `Roles` table, and a
+`UserRoles` many-to-many association table. A data entry person should never have to
+think about foreign keys or normalized tables. The SQL pro designs a staging table shaped
+for the *human workflow*:
+
+```
+Staging_UserRoleAssignments
+  UserName    | RoleName1   | RoleName2   | RoleName3   | RoleName4
+  joeSmith    | sysAdmin    | financeUser | execTeam    |
+  maryJones   | financeUser |             |             |
+```
+
+The processing sproc then takes that clean, human-readable staged data and handles all
+the FK lookups, upserts, and business rules across the three domain tables — whatever
+SQL logic is needed. SqlXl generates the Excel template from the staging table shape
+and routes the filled file back through the sproc. **The staging table shape is the API
+contract the SQL pro designs for the data entry person — not for the database.**
+
+This pattern handles scenarios that `insert` and `update` simply cannot:
+- Writes that span multiple domain tables in one operation
+- Denormalized input that maps to normalized storage (like the RBAC example)
+- Complex business rules enforced entirely in SQL, with row-level error reporting
+- Any custom workflow the SQL pro can express as a staging table + processing sproc
+
+`--feature N` references `SqlXl.BulkOpFeatures.ID` directly.
 
 ---
 
@@ -131,8 +160,6 @@ Commands: `insert`, `update`
 - No BulkOpFeature row required
 - Tool calls `ScaffoldAn_INSERT_Feature` or `ScaffoldAn_UPDATE_Feature` sprocs on-the-fly
   to derive sensible defaults from the table definition (column types, nullability, etc.)
-- Staging table is **ephemeral** — created fresh each run, dropped after processing
-- On failure, user fixes their Excel file and re-runs; the file is the artifact being iterated on
 - FK dropdowns and other metadata use scaffold sproc defaults (no customization at this tier)
 
 **Prerequisites:** A well-defined domain table. That's it.
@@ -141,17 +168,16 @@ Commands: `insert`, `update`
 
 Command: `import`
 
-- Requires a fully populated, valid `SqlXl.BulkOpFeatures` row
-- Requires a permanent staging table (pre-existing, not generated on-the-fly)
+- Requires a manually configured `SqlXl.BulkOpFeatures` row (ID, staging table name,
+  processing sproc name, `GetRowsToEdit_SelectStatement` for template generation)
+- Requires a permanent, custom staging table designed by the SQL pro
 - If either prerequisite is missing, the command fails with a clear actionable error message
-- BulkOpFeature config drives the template: column display names, FK dropdowns,
-  sheet protection, custom processing sproc, etc.
-- Custom processing sproc can insert/update/delete across one or many tables —
-  literally anything the user wants to do
-- Validation: if input data is not 100% valid, the tool rolls back and returns
-  detailed row-level error messages
+- The staging table shape drives the Excel template — columns, types, FK dropdowns
+- The processing sproc owns all domain logic: inserts, updates, deletes, lookups,
+  business rules — across as many tables as needed
+- Validation: if any row fails staging table constraints, full rollback + row-level errors
 
-**Prerequisites:** Configured BulkOpFeature row + permanent staging table.
+**Prerequisites:** Configured `BulkOpFeatures` row + custom staging table + processing sproc.
 
 ---
 
@@ -285,4 +311,4 @@ Tables containing these types will not work correctly with the Excel import/expo
 ---
 
 *Last updated: 2026-04-11*
-*Status: Core commands (insert, update, demo, init, test) implemented and working. Pre-publish blockers: ClosedXML migration, import --feature command, connection string persistence.*
+*Status: insert, update, export, demo, init, test implemented and working. ClosedXML migration complete. Pre-publish blockers: import --feature command, connection string persistence, delete old ImportCommand.*
