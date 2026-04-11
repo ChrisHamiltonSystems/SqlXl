@@ -9,6 +9,8 @@ var app = new CommandApp();
 app.Configure(config =>
 {
     config.SetApplicationName("sqlxl");
+    config.AddCommand<DemoCommand>("demo")
+        .WithDescription("Create the SqlXlDemo database with sample data (drops and recreates)");
     config.AddCommand<ExportCommand>("export")
         .WithDescription("Get Excel template starting point file for a BulkOpFeature");
     config.AddCommand<ImportCommand>("import")
