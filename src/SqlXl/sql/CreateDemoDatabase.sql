@@ -102,6 +102,7 @@ CREATE TABLE dbo.Products (
     CategoryID    INT NOT NULL,
     StockQuantity INT NULL,
     IsActive      BIT NOT NULL DEFAULT (1),
+    UNIQUE (ProductName),
     FOREIGN KEY (CategoryID) REFERENCES dbo.Categories(CategoryID),
     CHECK (Price > 0),
     CHECK (StockQuantity >= 0)
