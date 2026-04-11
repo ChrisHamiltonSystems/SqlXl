@@ -141,7 +141,7 @@ Commands: `insert`, `update`
 
 Command: `import`
 
-- Requires a fully populated, valid `ZZ_SlappFramework.BulkOpFeatures` row
+- Requires a fully populated, valid `SqlXl.BulkOpFeatures` row
 - Requires a permanent staging table (pre-existing, not generated on-the-fly)
 - If either prerequisite is missing, the command fails with a clear actionable error message
 - BulkOpFeature config drives the template: column display names, FK dropdowns,
@@ -222,6 +222,56 @@ Do not extend them — delete and rebuild as `InsertCommand`, `UpdateCommand`, `
 
 ---
 
+## Distribution
+
+**NuGet only.** SqlXL is a .NET global tool — NuGet is the one and only distribution channel.
+
+```bash
+dotnet tool install --global SqlXl
+```
+
+VS Marketplace is not in scope — it targets Visual Studio extensions (VSIX), a different artifact type entirely. If IDE integration ever becomes a goal, that is a separate future project.
+
+---
+
+## License
+
+SqlXL is **MIT licensed**. All dependencies must be MIT-compatible.
+
+**EPPlus is a pre-publish blocker.** EPPlus 8.x requires either a paid commercial license or a NonCommercial personal/org license. A freely distributed NuGet tool cannot ship with EPPlus without running into licensing ambiguity — particularly for the primary audience of large enterprise organizations.
+
+**Resolution: migrate from EPPlus to ClosedXML** before v1.0 is published. ClosedXML is MIT licensed with zero restrictions. The migration is fully contained to two files:
+- `Core/ExcelTemplateGenerator.cs`
+- `Core/ExcelImporter.cs`
+
+All required capabilities (cell styling, data validation, sheet protection, dropdowns) are available in ClosedXML. The API is different but the migration is mechanical.
+
+---
+
+## Roadmap to v1.0
+
+### v1.0 definition — the bar for NuGet publish
+
+| # | Item | Notes |
+|---|------|-------|
+| 1 | **EPPlus → ClosedXML migration** | License non-negotiable before public publish |
+| 2 | **`sqlxl import --feature N`** | Tier 3 command — completes the three-tier design |
+| 3 | **Connection string persistence** | After `sqlxl init`, no `--connection` flag needed for subsequent commands. Store in user-scoped config (e.g., `~/.sqlxl/config.json`). Without this, `--connection` on every command is a UX embarrassment. |
+| 4 | **Delete old `ExportCommand` / `ImportCommand`** | Dead code in a published tool looks unfinished |
+| 5 | **NuGet package metadata** | Description, tags, icon, authors, project URL, license expression in `.csproj` |
+| 6 | **Basic README** | Install instructions, quickstart, connection string example |
+
+### Post-v1.0 backlog (do not block publish on these)
+
+- **Schema drift / `sqlxl refresh --table`** — re-scaffold staging table and sproc when domain table columns change after initial scaffold. Important long-term but rarely hit in practice.
+- **`sqlxl test` unique constraint limitation** — `GenerateTestData` uses fixed sample values; second run fails on unique columns. Workaround: `sqlxl demo --yes` to reset. Long-term fix: append timestamp/GUID to string sample values.
+- **Multi-feature ambiguity** — if `dbo.Products` has two INSERT features in `BulkOpFeatures`, `insert --table` should fail loudly and tell the user to use `import --feature` directly.
+- **`--quiet` / `--json` output flags** — for agent/scripting contexts.
+- **Code signing** — increases trust in enterprise environments; can be added post-publish.
+- **`--where` quoting docs** — shell quoting of SQL fragments needs clear guidance in docs.
+
+---
+
 ## Unsupported SQL Column Types
 
 The following SQL Server column types are **not supported** by SqlXL and should never appear in tables used with this tool:
@@ -232,29 +282,7 @@ Tables containing these types will not work correctly with the Excel import/expo
 
 ---
 
-## Open Questions / Future Considerations
-
-- **`sqlxl test` and unique constraints (deferred):** The `GenerateTestData` SQL sproc uses
-  fixed `ValidSampleValue` entries from `Meta_Columns`. For INSERT features on tables with
-  unique non-PK columns, a second test run will always fail because the same sample value was
-  already committed by the first run. Workaround: reset with `sqlxl demo --yes` before each
-  test session. Long-term fix: make the sproc generate unique values (e.g. append a timestamp
-  to string columns) — but this is a core infrastructure change that needs careful vetting.
-
-- **Schema drift (important, deferred):** When a domain table's columns change after
-  `ScaffoldAn_INSERT_Feature` has already run, the scaffolded staging table, sproc, and
-  BulkOpFeature row will be out of sync. The fix is likely a `sqlxl refresh --table dbo.Products`
-  command that re-runs scaffolding safely (drop/recreate staging table, replace sproc, update
-  BulkOpFeature row). Not a v0.1 concern — address when real users hit it.
-
-- Default output filename convention when `--output` is not specified
-  (e.g., `Products_insert_YYYYMMDD.xlsx`?)
-- `--where` quoting docs — shell quoting of SQL fragments needs clear guidance
-- Multi-feature ambiguity: if `dbo.Products` has two INSERT features configured,
-  `insert --table` should fail loudly and tell the user to use `import --feature` directly
-- `--quiet` / `--json` output flags for agent/scripting use cases (Tier 2 consideration)
-
 ---
 
-*Last updated: 2026-04-10*
-*Status: Design agreed, not yet implemented*
+*Last updated: 2026-04-11*
+*Status: Core commands (insert, update, demo, init, test) implemented and working. Pre-publish blockers: ClosedXML migration, import --feature command, connection string persistence.*
