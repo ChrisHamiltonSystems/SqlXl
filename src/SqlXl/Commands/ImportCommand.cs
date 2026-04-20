@@ -10,7 +10,7 @@ namespace SqlXl.Commands;
 
 public class ImportCommand : Command<ImportCommand.Settings>
 {
-    public class Settings : CommandSettings
+    public class Settings : ConnectionSettings
     {
         [CommandOption("--feature <ID>")]
         [Description("BulkOpFeature ID from SqlXl.BulkOpFeatures")]
@@ -23,10 +23,6 @@ public class ImportCommand : Command<ImportCommand.Settings>
         [CommandOption("--output <FILE>")]
         [Description("Output path for generated template (optional; defaults to Feature_YYYYMMDD.xlsx)")]
         public string OutputPath { get; set; } = string.Empty;
-
-        [CommandOption("--connection <CONNSTR>")]
-        [Description("SQL Server connection string")]
-        public string ConnectionString { get; set; } = "Data Source=localhost;Database=SqlXlDemo;Integrated Security=true;TrustServerCertificate=true;";
 
         [CommandOption("--no-launch")]
         [Description("Do not open the generated Excel file (useful for agents and scripts)")]
@@ -50,8 +46,9 @@ public class ImportCommand : Command<ImportCommand.Settings>
 
         try
         {
+            var connStr = settings.ResolveConnection();
             var cache = new MemoryCache(new MemoryCacheOptions());
-            var dataService = new DataService(settings.ConnectionString, cache);
+            var dataService = new DataService(connStr, cache);
 
             BulkOpFeature feature = null;
             AnsiConsole.Status().Start("Fetching feature configuration...", ctx =>
@@ -78,7 +75,7 @@ public class ImportCommand : Command<ImportCommand.Settings>
             AnsiConsole.WriteLine();
 
             return isImport
-                ? RunImport(settings, dataService, feature)
+                ? RunImport(settings, connStr, dataService, feature)
                 : RunExport(settings, dataService, feature);
         }
         catch (Exception ex)
@@ -129,7 +126,7 @@ public class ImportCommand : Command<ImportCommand.Settings>
         return 0;
     }
 
-    private static int RunImport(Settings settings, DataService dataService, BulkOpFeature feature)
+    private static int RunImport(Settings settings, string connStr, DataService dataService, BulkOpFeature feature)
     {
         byte[] excelBytes = File.ReadAllBytes(settings.FilePath);
         AnsiConsole.MarkupLine($"File loaded: [cyan]{excelBytes.Length:N0} bytes[/]");
@@ -170,7 +167,7 @@ public class ImportCommand : Command<ImportCommand.Settings>
         AnsiConsole.Status().Start("Validating and processing via staging table...", ctx =>
         {
             result = BulkOpsHelper.ExecuteFeatureAsync(
-                settings.ConnectionString,
+                connStr,
                 importResult.ImportedData,
                 feature.ID,
                 stopAfterThisManyErrors: 10,

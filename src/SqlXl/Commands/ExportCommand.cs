@@ -9,7 +9,7 @@ namespace SqlXl.Commands;
 
 public class ExportCommand : Command<ExportCommand.Settings>
 {
-    public class Settings : CommandSettings
+    public class Settings : ConnectionSettings
     {
         [CommandOption("--query <SQL>")]
         [Description("SELECT statement to export (validated via SqlXl infrastructure before execution)")]
@@ -18,10 +18,6 @@ public class ExportCommand : Command<ExportCommand.Settings>
         [CommandOption("--output <FILE>")]
         [Description("Output Excel file path (optional; defaults to export_YYYYMMDD_HHmmss.xlsx)")]
         public string OutputPath { get; set; } = string.Empty;
-
-        [CommandOption("--connection <CONNSTR>")]
-        [Description("SQL Server connection string")]
-        public string ConnectionString { get; set; } = "Data Source=localhost;Database=SqlXlDemo;Integrated Security=true;TrustServerCertificate=true;";
 
         [CommandOption("--no-launch")]
         [Description("Do not open the generated Excel file (useful for agents and scripts)")]
@@ -43,8 +39,9 @@ public class ExportCommand : Command<ExportCommand.Settings>
 
         try
         {
+            var connStr = settings.ResolveConnection();
             var cache = new MemoryCache(new MemoryCacheOptions());
-            var dataService = new DataService(settings.ConnectionString, cache);
+            var dataService = new DataService(connStr, cache);
 
             DataTable data = null;
             AnsiConsole.Status().Start("Validating and executing query...", ctx =>

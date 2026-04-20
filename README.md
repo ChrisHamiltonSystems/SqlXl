@@ -1,53 +1,145 @@
 # SqlXL
 
-A lightweight CLI tool for SQL Server data professionals to efficiently move data between SQL Server and Excel.
+**Excel ↔ SQL Server, without the web server.**
 
-## What is SqlXL?
+SqlXL is a .NET global tool for SQL Server data professionals. Bulk-insert or bulk-update rows via Excel with full staging-table validation, or export query results to Excel — validated by your own database constraints, no web server or extra infrastructure required.
 
-SqlXL is a command-line companion tool for databases using [SlappFramework](https://github.com/ChrisHamiltonSystems/SlappFramework) infrastructure. It provides fast, convenient commands for two key scenarios:
-
-1. **Pull**: Export SQL query results to formatted Excel templates
-2. **Push**: Import validated Excel data back to SQL Server
-
-## Prerequisites
-
-- SQL Server database with SlappFramework infrastructure installed
-- Configured BulkOpFeatures in `ZZ_SlappFramework.BulkOpFeatures`
-- .NET 8.0 Runtime
-
-## Installation
+## Install
 
 ```bash
-# Install globally as a dotnet tool
 dotnet tool install --global SqlXl
 ```
 
-## Quick Start
+Requires .NET 8.0 or later. Windows only.
+
+## First-time setup
 
 ```bash
-# Pull data to Excel template
-sqlxl pull --query "SELECT * FROM Employees WHERE DeptID = 5" --feature 10 --output data.xlsx
+sqlxl init --connection "Server=myserver;Database=MyDB;Integrated Security=true;TrustServerCertificate=true;"
+```
 
-# Push edited data back to SQL Server
-sqlxl push --file data.xlsx --feature 10
+Installs SqlXL infrastructure into your database and saves the connection as your default profile. You won't need `--connection` on subsequent commands.
+
+**Want to try it before touching your own database?**
+
+```bash
+sqlxl demo --connection "Server=localhost;Integrated Security=true;TrustServerCertificate=true;"
+sqlxl init --connection "Server=localhost;Database=SqlXlDemo;Integrated Security=true;TrustServerCertificate=true;" --profile demo
+sqlxl use demo
+sqlxl insert --table dbo.Products
 ```
 
 ## Commands
 
-### `pull` - Export data to Excel
-Executes a SQL query and generates a formatted Excel file using an existing BulkOpFeature configuration.
+### `sqlxl insert` — bulk-insert new rows
 
-### `push` - Import data from Excel
-Validates and imports Excel data using SlappFramework's staging table validation.
+```bash
+# Generate an empty INSERT template
+sqlxl insert --table dbo.Products
 
-## Status
+# Import a filled template
+sqlxl insert --table dbo.Products --file Products_insert_20260412.xlsx
+```
 
-🚧 **In Development** - Version 0.1.0
+No configuration needed. SqlXL inspects the table and scaffolds everything automatically on first use.
+
+### `sqlxl update` — bulk-update existing rows
+
+```bash
+# Generate a pre-populated UPDATE template (all rows)
+sqlxl update --table dbo.Products
+
+# Filter which rows to include
+sqlxl update --table dbo.Products --where "CategoryName = 'Electronics'"
+
+# Import a filled template
+sqlxl update --table dbo.Products --file Products_update_20260412.xlsx
+```
+
+### `sqlxl import` — custom feature (power users)
+
+For workflows that span multiple tables, or require custom validation logic, configure a `BulkOpFeature` in your database and reference it by ID:
+
+```bash
+# Generate template driven by the feature config
+sqlxl import --feature 7
+
+# Import a filled template through the configured processing sproc
+sqlxl import --feature 7 --file data.xlsx
+```
+
+### `sqlxl export` — export a query to Excel
+
+```bash
+sqlxl export --query "SELECT * FROM dbo.Products WHERE CategoryID = 3"
+sqlxl export --query "SELECT * FROM dbo.Orders" --output orders.xlsx
+```
+
+### `sqlxl test` — smoke-test a table's features
+
+Auto-generates test data and runs it through all configured features for a table. Useful after scaffolding to verify the pipeline end-to-end.
+
+```bash
+sqlxl test --table dbo.Products
+sqlxl test --table dbo.Products --rows 5
+```
+
+### `sqlxl demo` — spin up a demo database
+
+Creates (or resets) a self-contained demo database with sample tables and data. Safe to run repeatedly — drops and recreates.
+
+```bash
+sqlxl demo --connection "Server=localhost;Integrated Security=true;TrustServerCertificate=true;"
+```
+
+## How validation works
+
+Data is bulk-copied to a staging table. SQL Server constraints on that table are the validators. If any row fails a constraint, the entire batch is rolled back and row-level error messages are returned to the terminal. No partial imports.
+
+## Managing connections
+
+SqlXL stores named connection profiles in `~/.sqlxl/config.json`. After `sqlxl init`, no `--connection` flag is needed.
+
+```bash
+# Save additional profiles
+sqlxl init --connection "Server=prod;Database=ProdDB;..." --profile prod
+sqlxl init --connection "Server=staging;Database=StageDB;..." --profile staging
+
+# Switch the active profile
+sqlxl use prod
+
+# List all profiles (shows active with *)
+sqlxl connections list
+
+# Remove a profile
+sqlxl connections remove staging
+```
+
+**Per-command overrides:**
+
+```bash
+# Use a named profile just for this command (doesn't change the active profile)
+sqlxl insert --table dbo.Products --profile staging
+
+# Fully explicit connection string (overrides everything)
+sqlxl insert --table dbo.Products --connection "Server=...;Database=...;"
+```
+
+**Resolution order** (highest to lowest priority):
+
+1. `--connection` flag
+2. `SQLXL_CONNECTION` environment variable
+3. `--profile` flag
+4. Active profile in `~/.sqlxl/config.json`
+
+**Security:** Windows Auth connection strings (no password) are stored as plain text — there is nothing to protect. SQL Auth connection strings are automatically encrypted with Windows DPAPI, bound to your user account and machine.
+
+## Requirements
+
+- .NET 8.0 or later
+- SQL Server 2019 or later
+- Windows (DPAPI credential storage is Windows-only)
 
 ## License
 
-TBD
-
-## Author
-
-Chris Hamilton
+MIT — see [LICENSE](LICENSE)

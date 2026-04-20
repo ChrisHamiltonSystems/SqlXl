@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,15 +6,34 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
 
+    <!-- SqlXL targets Windows SQL Server environments; DPAPI (CA1416) is intentionally Windows-only -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+
     <!-- dotnet tool configuration -->
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>sqlxl</ToolCommandName>
+
+    <!-- NuGet package identity -->
     <PackageId>SqlXl</PackageId>
-    <Version>0.1.0</Version>
+    <Version>1.0.0-beta</Version>
     <Authors>Chris Hamilton</Authors>
-    <Description>A lightweight CLI tool for SQL Server data professionals to efficiently move data between SQL Server and Excel using SlappFramework infrastructure.</Description>
-    <PackageTags>sql;excel;cli;dotnet-tool;sqlserver</PackageTags>
+    <Copyright>Copyright (c) 2026 Chris Hamilton</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/ChrisHamiltonSystems/SqlXl</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ChrisHamiltonSystems/SqlXl</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <!-- NuGet listing -->
+    <Description>SqlXL is a .NET global tool for SQL Server data professionals. Bulk-insert or bulk-update rows via Excel with full staging-table validation, or export query results to Excel — no web server, no extra infrastructure required.</Description>
+    <PackageTags>sql;sqlserver;excel;bulk-import;bulk-export;dba;data-tools;cli;dotnet-tool</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>1.0.0-beta: Core insert/update/import/export commands, named connection profiles with DPAPI encryption, demo database, auto-scaffolding.</PackageReleaseNotes>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Include repo-root README in the NuGet package -->
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="sql\CreateInfrastructure.sql" />
@@ -24,6 +43,7 @@
 
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.102.2" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.4" />
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />

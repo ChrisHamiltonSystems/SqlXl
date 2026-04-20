@@ -282,10 +282,14 @@ All required capabilities (cell styling, data validation, sheet protection, drop
 |---|------|-------|
 | 1 | ~~**EPPlus → ClosedXML migration**~~ ✅ | License non-negotiable before public publish |
 | 2 | ~~**`sqlxl import --feature N`**~~ ✅ | Tier 3 command — completes the three-tier design. RBAC demo (Users/Roles/UserRoles) end-to-end verified. |
-| 3 | **Connection string persistence** | After `sqlxl init`, no `--connection` flag needed for subsequent commands. Store in user-scoped config (e.g., `~/.sqlxl/config.json`). Without this, `--connection` on every command is a UX embarrassment. |
+| 3 | ~~**Connection string persistence**~~ ✅ | Named profiles in `~/.sqlxl/config.json`. DPAPI encryption for SQL Auth. `sqlxl use <profile>`, `sqlxl connections list/remove`. Resolution chain: `--connection` > `SQLXL_CONNECTION` env var > `--profile` flag > active profile. |
 | 4 | ~~**Delete old `ExportCommand` / `ImportCommand`**~~ ✅ | Both commands were fully rewritten as part of the new design — no dead code remains. |
 | 5 | **NuGet package metadata** | Description, tags, icon, authors, project URL, license expression in `.csproj` |
 | 6 | **Basic README** | Install instructions, quickstart, connection string example |
+
+### Known issues (present in v1.0-beta, fix before v1.0 stable)
+
+- **`sqlxl init` is not idempotent** — `CreateInfrastructure.sql` uses bare `CREATE SCHEMA SqlXl` with no `IF NOT EXISTS` guard. Re-running `init` against an already-configured database throws a SQL exception and exits without saving the profile. The database itself is unharmed, but the user cannot add or update a profile for an existing database without hand-editing `~/.sqlxl/config.json`. Fix: wrap all object-creation DDL in `CreateInfrastructure.sql` with `IF NOT EXISTS` / `IF OBJECT_ID IS NULL` guards. SQL-only change, no C# required.
 
 ### Post-v1.0 backlog (do not block publish on these)
 
@@ -310,5 +314,5 @@ Tables containing these types will not work correctly with the Excel import/expo
 
 ---
 
-*Last updated: 2026-04-11*
-*Status: All six commands implemented and smoke-tested (insert, update, export, demo, init, test, import --feature). ClosedXML migration complete. RBAC demo data + CreateDemoFeatures.sql complete and end-to-end verified. Pre-publish blockers remaining: connection string persistence, NuGet package metadata, basic README.*
+*Last updated: 2026-04-12*
+*Status: Connection string persistence complete (named profiles, DPAPI, sqlxl use/connections). Pre-publish blockers remaining: NuGet package metadata, basic README. Known issue: init not idempotent (see above). Publishing as v1.0-beta.*

@@ -10,7 +10,7 @@ namespace SqlXl.Commands;
 
 public class TestCommand : Command<TestCommand.Settings>
 {
-    public class Settings : CommandSettings
+    public class Settings : ConnectionSettings
     {
         [CommandOption("--table <TABLE>")]
         [Description("Domain table to test, e.g. dbo.Products or just Products (assumes dbo)")]
@@ -19,10 +19,6 @@ public class TestCommand : Command<TestCommand.Settings>
         [CommandOption("--rows <N>")]
         [Description("Number of test rows to generate per feature (default: 1, max: 100)")]
         public int Rows { get; set; } = 1;
-
-        [CommandOption("--connection <CONNSTR>")]
-        [Description("SQL Server connection string")]
-        public string ConnectionString { get; set; } = "Data Source=localhost;Database=SqlXlDemo;Integrated Security=true;TrustServerCertificate=true;";
 
         public override ValidationResult Validate()
         {
@@ -45,8 +41,9 @@ public class TestCommand : Command<TestCommand.Settings>
 
         try
         {
+            var connStr = settings.ResolveConnection();
             var cache = new MemoryCache(new MemoryCacheOptions());
-            var dataService = new DataService(settings.ConnectionString, cache);
+            var dataService = new DataService(connStr, cache);
 
             // Find all configured features for this table
             List<BulkOpFeature> features = null;
@@ -68,7 +65,7 @@ public class TestCommand : Command<TestCommand.Settings>
             // Instantiate BulkOpsHelper once (loads all features from DB)
             var bulkOpsSettings = new BulkOpsSettings
             {
-                ConnectionString = settings.ConnectionString,
+                ConnectionString = connStr,
                 StopAfterThisManyErrors = 10
             };
             var bulkOpsHelper = new BulkOpsHelper(bulkOpsSettings);
@@ -85,7 +82,7 @@ public class TestCommand : Command<TestCommand.Settings>
                     DataTable testData = GenerateTestData(bulkOpsHelper, feature, settings.Rows);
 
                     DataSet result = BulkOpsHelper.ExecuteFeatureAsync(
-                        settings.ConnectionString,
+                        connStr,
                         testData,
                         feature.ID,
                         stopAfterThisManyErrors: 10,
