@@ -33,7 +33,12 @@ CREATE TABLE SqlXl.Staging_UserRoleAssignments (
     Role2     NVARCHAR(100) NULL,
     Role3     NVARCHAR(100) NULL,
     Role4     NVARCHAR(100) NULL,
-    CONSTRAINT PK_Staging_UserRoleAssignments PRIMARY KEY (ID)
+    CONSTRAINT PK_Staging_UserRoleAssignments PRIMARY KEY (ID),
+    CONSTRAINT FK_Staging_UserRoleAssignments_UserName FOREIGN KEY (UserName) REFERENCES dbo.Users(Username),
+    CONSTRAINT FK_Staging_UserRoleAssignments_Role1    FOREIGN KEY (Role1)    REFERENCES dbo.Roles(RoleName),
+    CONSTRAINT FK_Staging_UserRoleAssignments_Role2    FOREIGN KEY (Role2)    REFERENCES dbo.Roles(RoleName),
+    CONSTRAINT FK_Staging_UserRoleAssignments_Role3    FOREIGN KEY (Role3)    REFERENCES dbo.Roles(RoleName),
+    CONSTRAINT FK_Staging_UserRoleAssignments_Role4    FOREIGN KEY (Role4)    REFERENCES dbo.Roles(RoleName)
 );
 GO
 
