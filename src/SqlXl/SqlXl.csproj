@@ -15,7 +15,7 @@
 
     <!-- NuGet package identity -->
     <PackageId>SqlXl</PackageId>
-    <Version>1.0.0-beta</Version>
+    <Version>1.0.0</Version>
     <Authors>Chris Hamilton</Authors>
     <Copyright>Copyright (c) 2026 Chris Hamilton</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -27,15 +27,15 @@
     <Description>SqlXL is a .NET global tool for SQL Server data professionals. Bulk-insert or bulk-update rows via Excel with full staging-table validation, or export query results to Excel — no web server, no extra infrastructure required.</Description>
     <PackageTags>sql;sqlserver;excel;bulk-import;bulk-export;dba;data-tools;cli;dotnet-tool</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageIcon>icon.ico</PackageIcon>
-    <PackageReleaseNotes>1.0.0-beta: Core insert/update/import/export commands, named connection profiles with DPAPI encryption, demo database, auto-scaffolding.</PackageReleaseNotes>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReleaseNotes>1.0.0: Initial stable release. Insert, update, import, export commands. Named connection profiles with DPAPI encryption. Auto-scaffolding from any SQL Server table. Demo database. Full staging-table validation.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Include repo-root README in the NuGet package -->
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     <!-- Include icon in the NuGet package -->
-    <None Include="icon.ico" Pack="true" PackagePath="\" />
+    <None Include="icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
