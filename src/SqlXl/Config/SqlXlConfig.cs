@@ -14,6 +14,7 @@ public class SqlXlConfig
         ".sqlxl", "config.json");
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
     [JsonPropertyName("activeProfile")]
     public string ActiveProfile { get; set; } = string.Empty;
@@ -30,7 +31,7 @@ public class SqlXlConfig
 
         try
         {
-            var json = File.ReadAllText(ConfigPath);
+            var json = File.ReadAllText(ConfigPath, Utf8NoBom);
             return JsonSerializer.Deserialize<SqlXlConfig>(json, JsonOptions) ?? new SqlXlConfig();
         }
         catch (JsonException ex)
@@ -44,7 +45,7 @@ public class SqlXlConfig
     public void Save()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(ConfigPath)!);
-        File.WriteAllText(ConfigPath, JsonSerializer.Serialize(this, JsonOptions));
+        File.WriteAllText(ConfigPath, JsonSerializer.Serialize(this, JsonOptions), Utf8NoBom);
     }
 
     [SupportedOSPlatform("windows")]
