@@ -289,7 +289,7 @@ All required capabilities (cell styling, data validation, sheet protection, drop
 
 ### Known issues (present in v1.0-beta, fix before v1.0 stable)
 
-- **`sqlxl init` is not idempotent** — `CreateInfrastructure.sql` uses bare `CREATE SCHEMA SqlXl` with no `IF NOT EXISTS` guard. Re-running `init` against an already-configured database throws a SQL exception and exits without saving the profile. The database itself is unharmed, but the user cannot add or update a profile for an existing database without hand-editing `~/.sqlxl/config.json`. Fix: wrap all object-creation DDL in `CreateInfrastructure.sql` with `IF NOT EXISTS` / `IF OBJECT_ID IS NULL` guards. SQL-only change, no C# required.
+~~**`sqlxl init` is not idempotent**~~ ✅ — Fixed in commit `0bb2ceb`. All DDL in `CreateInfrastructure.sql` is guarded with `IF NOT EXISTS` / `IF OBJECT_ID IS NULL` / `CREATE OR ALTER`. Re-running `init` against an existing database is safe.
 
 ### Post-v1.0 backlog (do not block publish on these)
 
@@ -317,5 +317,5 @@ Tables containing these types will not work correctly with the Excel import/expo
 
 ---
 
-*Last updated: 2026-04-12*
-*Status: Connection string persistence complete (named profiles, DPAPI, sqlxl use/connections). Pre-publish blockers remaining: NuGet package metadata, basic README. Known issue: init not idempotent (see above). Publishing as v1.0-beta.*
+*Last updated: 2026-04-20*
+*Status: All v1.0 blockers resolved. Ready to publish as v1.0 stable.*
