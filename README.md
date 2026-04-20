@@ -1,8 +1,33 @@
 # SqlXL
 
-**Excel ↔ SQL Server, without the web server.**
+## Move data between Excel and SQL Server — safely
 
-SqlXL is a .NET global tool for SQL Server data professionals. Bulk-insert or bulk-update rows via Excel with full staging-table validation, or export query results to Excel — validated by your own database constraints, no web server or extra infrastructure required.
+Stop manually exporting query results, editing spreadsheets, and hoping nothing breaks.
+
+**SqlXL lets you bulk insert or update SQL Server data from Excel — with full validation using your existing database constraints.**
+
+- No manual scripts
+- No fragile copy/paste workflows
+- No partial imports or silent data corruption
+
+Built for SQL Server developers and data professionals who rely on Excel but need **production-safe results**.
+
+---
+
+## Why SqlXL exists
+
+If you've ever:
+
+- Exported query results to Excel just to clean them up
+- Manually edited data before re-importing it
+- Worried about bad data making it into your database
+- Written one-off scripts for bulk updates
+
+Then you already know the problem.
+
+**SqlXL replaces that entire workflow with something safe, repeatable, and fast.**
+
+---
 
 ## Install
 
