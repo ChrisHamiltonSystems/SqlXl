@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using Spectre.Console;
 
 namespace SqlXl.Config;
@@ -19,12 +20,17 @@ public static class ConnectionResolver
 
         // 3. --profile flag (named override without switching the active profile)
         if (!string.IsNullOrWhiteSpace(profileOverride))
-            return config.GetConnectionString(profileOverride);
+        {
+            var connStr = config.GetConnectionString(profileOverride);
+            PrintProfileLine(profileOverride, connStr);
+            return connStr;
+        }
 
         // 4. Active profile from config
         if (!string.IsNullOrWhiteSpace(config.ActiveProfile) && config.Profiles.Count > 0)
         {
             var connStr = config.GetConnectionString(config.ActiveProfile);
+            PrintProfileLine(config.ActiveProfile, connStr);
 
             // Warn if a non-encrypted profile contains a plaintext password
             if (config.Profiles.TryGetValue(config.ActiveProfile, out var entry)
@@ -43,5 +49,18 @@ public static class ConnectionResolver
         throw new InvalidOperationException(
             "No connection configured.\n" +
             "Run: sqlxl init --connection \"Server=myserver;Database=MyDB;Integrated Security=true;TrustServerCertificate=true;\"");
+    }
+
+    private static void PrintProfileLine(string profileName, string connStr)
+    {
+        try
+        {
+            var b = new SqlConnectionStringBuilder(connStr);
+            AnsiConsole.MarkupLine($"[grey]Profile: {Markup.Escape(profileName)} → {Markup.Escape(b.DataSource)} / {Markup.Escape(b.InitialCatalog)}[/]");
+        }
+        catch
+        {
+            AnsiConsole.MarkupLine($"[grey]Profile: {Markup.Escape(profileName)}[/]");
+        }
     }
 }
