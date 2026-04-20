@@ -116,6 +116,7 @@ public class ImportCommand : Command<ImportCommand.Settings>
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("Fill in the template then run:");
         AnsiConsole.MarkupLine($"  [cyan]sqlxl import --feature {settings.FeatureId} --file {Markup.Escape(outputPath)}[/]");
+        AnsiConsole.MarkupLine("[grey]Tip: close the file in Excel first (Ctrl+W) or the import will fail.[/]");
         AnsiConsole.WriteLine();
 
         if (!settings.NoLaunch)

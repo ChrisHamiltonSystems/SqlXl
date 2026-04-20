@@ -117,7 +117,8 @@ public class InsertCommand : Command<InsertCommand.Settings>
         AnsiConsole.MarkupLine($"Columns:  [cyan]{templateData.Tables[0].Columns.Count}[/]");
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("Fill in the template then run:");
-        AnsiConsole.MarkupLine($"  [cyan]sqlxl insert --table {Markup.Escape(settings.Table)} --file {Markup.Escape(outputPath)} --no-launch[/]");
+        AnsiConsole.MarkupLine($"  [cyan]sqlxl insert --table {Markup.Escape(settings.Table)} --file {Markup.Escape(outputPath)}[/]");
+        AnsiConsole.MarkupLine("[grey]Tip: close the file in Excel first (Ctrl+W) or the import will fail.[/]");
         AnsiConsole.WriteLine();
 
         if (!settings.NoLaunch)
