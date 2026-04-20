@@ -1,4 +1,4 @@
-/****
+﻿/****
 CreateBulkOpsInfrastructure.sql
 
 Creates objects in this order below...
@@ -12,12 +12,13 @@ Creates objects in this order below...
 ***************************************/
 
 -- Create a separate schema for SqlXl functionality.
-CREATE SCHEMA SqlXl;
-go
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'SqlXl')
+    EXEC('CREATE SCHEMA SqlXl');
+GO
 
 /******************************
 User-Defined Function(s)...**/
-CREATE FUNCTION [SqlXl].[SingularizeTableName](@TableName NVARCHAR(128))
+CREATE OR ALTER FUNCTION [SqlXl].[SingularizeTableName](@TableName NVARCHAR(128))
 RETURNS NVARCHAR(128)
 AS
 BEGIN
@@ -35,7 +36,7 @@ BEGIN
 END
 go
 
-CREATE FUNCTION [SqlXl].[GenerateSelectStatementToSupportBulkEditingWithFKs]
+CREATE OR ALTER FUNCTION [SqlXl].[GenerateSelectStatementToSupportBulkEditingWithFKs]
   (
       @SchemaName NVARCHAR(128),
       @TableName NVARCHAR(128)
@@ -165,7 +166,7 @@ CREATE FUNCTION [SqlXl].[GenerateSelectStatementToSupportBulkEditingWithFKs]
   END;
 GO
 
-CREATE FUNCTION [SqlXl].[GenerateDebugStarter]()
+CREATE OR ALTER FUNCTION [SqlXl].[GenerateDebugStarter]()
 RETURNS NVARCHAR(MAX)
 AS
 BEGIN
@@ -187,7 +188,7 @@ CREATE TABLE #Messages (Msg NVARCHAR(MAX));';
 END;--end func 
 GO
 
-CREATE FUNCTION [SqlXl].PascalCaseToLabel (@Input NVARCHAR(MAX))
+CREATE OR ALTER FUNCTION [SqlXl].PascalCaseToLabel (@Input NVARCHAR(MAX))
 /*Examples...SELECT [SqlXl].PascalCaseToLabel('LastName') AS Label1,
        [SqlXl].PascalCaseToLabel('HireDate') AS Label2,
        [SqlXl].PascalCaseToLabel('PascalCaseToLabel') AS Label3;
@@ -224,7 +225,7 @@ BEGIN
 END --end func 
 GO
 
-CREATE FUNCTION [SqlXl].TableExists 
+CREATE OR ALTER FUNCTION [SqlXl].TableExists 
 (
 @SchemaName nvarchar(128),
 @TableName NVARCHAR(128)
@@ -254,7 +255,7 @@ BEGIN
 END;--end func
 go 
 
-CREATE FUNCTION [SqlXl].SprocExists 
+CREATE OR ALTER FUNCTION [SqlXl].SprocExists 
 (
     @SchemaName NVARCHAR(128),
     @SprocName NVARCHAR(128)
@@ -278,7 +279,7 @@ BEGIN
 END; -- end func
 GO
 
-CREATE FUNCTION [SqlXl].ColumnExists 
+CREATE OR ALTER FUNCTION [SqlXl].ColumnExists 
 (
     @SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
@@ -305,7 +306,7 @@ BEGIN
 END; -- end func
 GO
 
-create FUNCTION [SqlXl].[GenerateCreateStagingTableSQLWith_NO_IdentityProperty]
+CREATE OR ALTER FUNCTION [SqlXl].[GenerateCreateStagingTableSQLWith_NO_IdentityProperty]
 (
     @DomainSchemaName NVARCHAR(128),
     @DomainTableName NVARCHAR(128),
@@ -353,7 +354,7 @@ BEGIN
 END --end func
 GO
 
-create FUNCTION [SqlXl].GenerateRandomString
+CREATE OR ALTER FUNCTION [SqlXl].GenerateRandomString
 (
     @MaxLength INT
 )
@@ -385,7 +386,7 @@ BEGIN
 END;--end func 
 GO
 
-create FUNCTION [SqlXl].[SqlToListAllRowsFromOnlyWithinZZTempThatDuplicate_A_ValueForColumn]
+CREATE OR ALTER FUNCTION [SqlXl].[SqlToListAllRowsFromOnlyWithinZZTempThatDuplicate_A_ValueForColumn]
 (
     @ColumnNameToCheckForDuplication NVARCHAR(128)
 )
@@ -419,7 +420,7 @@ BEGIN
 END --end func 
 GO
 
-create FUNCTION [SqlXl].GenerateDuplicateCheckSQL
+CREATE OR ALTER FUNCTION [SqlXl].GenerateDuplicateCheckSQL
 (
     @DomainSchemaName NVARCHAR(128),
     @DomainTableName NVARCHAR(128),
@@ -496,7 +497,7 @@ BEGIN
 END --end func
 GO
 
-CREATE FUNCTION [SqlXl].[CreateInvalidNonForeignKeySampleValue]
+CREATE OR ALTER FUNCTION [SqlXl].[CreateInvalidNonForeignKeySampleValue]
 (
     @DataType NVARCHAR(128)
 )
@@ -534,7 +535,7 @@ BEGIN
 END --end func
 GO
 
-CREATE FUNCTION [SqlXl].[CreateNonForeignKeySampleValue]
+CREATE OR ALTER FUNCTION [SqlXl].[CreateNonForeignKeySampleValue]
 (
     @DataType NVARCHAR(128),
 	@MaxLengthForString int
@@ -573,7 +574,7 @@ BEGIN
 END --end func
 go
 
-CREATE FUNCTION SqlXl.GetPrimaryKeyColumnName (@SchemaName nvarchar(128), @TableName NVARCHAR(256))
+CREATE OR ALTER FUNCTION SqlXl.GetPrimaryKeyColumnName (@SchemaName nvarchar(128), @TableName NVARCHAR(256))
 RETURNS NVARCHAR(256)
 AS
 BEGIN
@@ -593,7 +594,7 @@ BEGIN
 END;--end func 
 go
 
-CREATE FUNCTION [SqlXl].[GenerateSqlToInsert_a_SingleValidSampleRowToStagingTable]
+CREATE OR ALTER FUNCTION [SqlXl].[GenerateSqlToInsert_a_SingleValidSampleRowToStagingTable]
 (
 	@DomainSchemaName nvarchar(128),
 	@DomainTableName nvarchar(128),
@@ -658,7 +659,7 @@ BEGIN --begin func
 END; --end func
 go
 
-CREATE FUNCTION [SqlXl].[ProposeStagingTableNameForInsertFeature] (@SourceTableName NVARCHAR(128))
+CREATE OR ALTER FUNCTION [SqlXl].[ProposeStagingTableNameForInsertFeature] (@SourceTableName NVARCHAR(128))
 RETURNS NVARCHAR(128) 
 AS
 BEGIN
@@ -667,7 +668,7 @@ BEGIN
 END;
 GO
 
-CREATE FUNCTION [SqlXl].[ProposeStagingTableNameForUpdateFeature] (@SourceTableName NVARCHAR(128))
+CREATE OR ALTER FUNCTION [SqlXl].[ProposeStagingTableNameForUpdateFeature] (@SourceTableName NVARCHAR(128))
 RETURNS NVARCHAR(128) 
 AS
 BEGIN
@@ -676,7 +677,7 @@ BEGIN
 END;
 GO
 
-CREATE FUNCTION SqlXl.GetIdentityColumnName (@SchemaName nvarchar(128), @TableName NVARCHAR(256))
+CREATE OR ALTER FUNCTION SqlXl.GetIdentityColumnName (@SchemaName nvarchar(128), @TableName NVARCHAR(256))
 RETURNS NVARCHAR(256)
 AS
 BEGIN
@@ -696,7 +697,7 @@ GO
 
 --Returns one or more columns for a given PK,UQ,FK constraint name
 --....(more than one column in cases of composite keys)...
-CREATE FUNCTION SqlXl.GetConstraintColumns (@ConstraintName NVARCHAR(256), @SchemaName NVARCHAR(256))
+CREATE OR ALTER FUNCTION SqlXl.GetConstraintColumns (@ConstraintName NVARCHAR(256), @SchemaName NVARCHAR(256))
 RETURNS TABLE
 AS
 RETURN
@@ -716,7 +717,7 @@ RETURN
 );
 GO
 
-CREATE FUNCTION SqlXl.GenerateUniqueConstraintSQL
+CREATE OR ALTER FUNCTION SqlXl.GenerateUniqueConstraintSQL
 (
 	--Builds a series of Alter Table statements
 	--that would create unique key constraints
@@ -773,7 +774,7 @@ BEGIN --begin func
 END --end func
 GO
 
-CREATE FUNCTION [SqlXl].[GenerateSelectStatementToResultInOneValidRow] 
+CREATE OR ALTER FUNCTION [SqlXl].[GenerateSelectStatementToResultInOneValidRow] 
 (
     @SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128)
@@ -867,7 +868,7 @@ BEGIN
 END; 
 GO
 
-CREATE FUNCTION SqlXl.RemoveMultiLineComments (@SQLCode NVARCHAR(MAX)) 
+CREATE OR ALTER FUNCTION SqlXl.RemoveMultiLineComments (@SQLCode NVARCHAR(MAX)) 
 RETURNS NVARCHAR(MAX)
 AS
 BEGIN
@@ -904,7 +905,7 @@ BEGIN
 END 
 GO
 
-CREATE FUNCTION [SqlXl].[GetBestDisplayColumn]
+CREATE OR ALTER FUNCTION [SqlXl].[GetBestDisplayColumn]
 (
     @SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128)
@@ -958,7 +959,7 @@ BEGIN
 END;
 Go
 
-CREATE FUNCTION [SqlXl].[GenerateDropdownQuery]
+CREATE OR ALTER FUNCTION [SqlXl].[GenerateDropdownQuery]
 (
     @SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128)
@@ -986,7 +987,7 @@ BEGIN
 END;
 GO
 
-CREATE FUNCTION [SqlXl].[ParseSchemaFromReferencedTable]
+CREATE OR ALTER FUNCTION [SqlXl].[ParseSchemaFromReferencedTable]
 -- Helper function to parse "Schema.Table" format
 (
     @ReferencedTable NVARCHAR(256)  -- Format: "SomeSchema.SomeTableName"
@@ -1009,7 +1010,7 @@ BEGIN
 END;
 GO
 
-CREATE FUNCTION [SqlXl].[ParseTableFromReferencedTable]
+CREATE OR ALTER FUNCTION [SqlXl].[ParseTableFromReferencedTable]
 (
     @ReferencedTable NVARCHAR(256)  -- Format: "SomeSchema.SomeTableName"
 )
@@ -1032,7 +1033,7 @@ BEGIN
 END;
 GO
 
-CREATE FUNCTION [SqlXl].[GetBestDisplayColumnFromReferencedTable]
+CREATE OR ALTER FUNCTION [SqlXl].[GetBestDisplayColumnFromReferencedTable]
 -- Overloaded function that accepts "Schema.Table" format
 (
     @ReferencedTable NVARCHAR(256)  -- Format: "SomeSchema.SomeTableName"
@@ -1047,7 +1048,7 @@ BEGIN
 END;
 GO
 
-CREATE FUNCTION [SqlXl].[GenerateDropdownQueryFromReferencedTable]
+CREATE OR ALTER FUNCTION [SqlXl].[GenerateDropdownQueryFromReferencedTable]
 -- Overloaded dropdown query generator
 (
     @ReferencedTable NVARCHAR(256)  -- Format: "SomeSchema.SomeTableName"
@@ -1062,7 +1063,7 @@ BEGIN
 END;
 GO
 
-CREATE FUNCTION [SqlXl].[GenerateDisplayViewSQL]
+CREATE OR ALTER FUNCTION [SqlXl].[GenerateDisplayViewSQL]
   (
       @SchemaName NVARCHAR(128),
       @TableName NVARCHAR(128)
@@ -1206,6 +1207,8 @@ CREATE FUNCTION [SqlXl].[GenerateDisplayViewSQL]
 
 /******************************
 Table(s)...**/
+IF OBJECT_ID('[SqlXl].[Meta_Columns]', 'U') IS NULL
+BEGIN
 CREATE TABLE [SqlXl].[Meta_Columns](
 	/*Intended to hold all meta data needed 
 	by BulkOpsHelper for a column in a domain table.*/
@@ -1246,8 +1249,11 @@ CREATE TABLE [SqlXl].[Meta_Columns](
 
 	--Note: consider adding more check constraints on remaining columns, for further validation??
 ); --end create table
+END
 GO
 
+IF OBJECT_ID('[SqlXl].[BulkOpFeatures]', 'U') IS NULL
+BEGIN
 CREATE TABLE [SqlXl].[BulkOpFeatures](
 	[ID] [int] IDENTITY(1,1) NOT NULL,
 	[UserFriendlyFeatureName] [nvarchar](255) NOT NULL,
@@ -1296,27 +1302,39 @@ CREATE TABLE [SqlXl].[BulkOpFeatures](
 	CONSTRAINT chk_SprocExists 
 		CHECK ([SqlXl].SprocExists(DomainSchemaName, SprocToProcessPerfectStagedData) = 1)
 ) ON [PRIMARY]
+END
 GO
 
-ALTER TABLE [SqlXl].[BulkOpFeatures] ADD  CONSTRAINT [PK_BulkOpFeatures] PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+IF NOT EXISTS (SELECT 1 FROM sys.key_constraints WHERE name = 'PK_BulkOpFeatures')
+BEGIN
+    ALTER TABLE [SqlXl].[BulkOpFeatures] ADD  CONSTRAINT [PK_BulkOpFeatures] PRIMARY KEY CLUSTERED
+    (
+        [ID] ASC
+    )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+END
 GO
 
-ALTER TABLE [SqlXl].[BulkOpFeatures] ADD  CONSTRAINT [UK_BulkOpFeatures] UNIQUE NONCLUSTERED 
-(
-	[UserFriendlyFeatureName] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+IF NOT EXISTS (SELECT 1 FROM sys.key_constraints WHERE name = 'UK_BulkOpFeatures')
+BEGIN
+    ALTER TABLE [SqlXl].[BulkOpFeatures] ADD  CONSTRAINT [UK_BulkOpFeatures] UNIQUE NONCLUSTERED
+    (
+        [UserFriendlyFeatureName] ASC
+    )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+END
 GO
 
-ALTER TABLE [SqlXl].[BulkOpFeatures] ADD  CONSTRAINT [DEFAULT_BulkOpFeatures_MenuDisplayRanking]  DEFAULT ((0)) FOR [MenuDisplayRanking]
+IF NOT EXISTS (SELECT 1 FROM sys.default_constraints WHERE name = 'DEFAULT_BulkOpFeatures_MenuDisplayRanking')
+BEGIN
+    ALTER TABLE [SqlXl].[BulkOpFeatures] ADD  CONSTRAINT [DEFAULT_BulkOpFeatures_MenuDisplayRanking]  DEFAULT ((0)) FOR [MenuDisplayRanking]
+END
 GO
 --end BulkOpFeatures table def*********************
 
 -- Create RequestContext table to store SPECIAL runtime context variables
 -- ...(One-off vars, like logged-on userID, role, etc
 --....NOT intended for common vars from QueryString or HtmlForm)
+IF OBJECT_ID('[SqlXl].[RequestContext]', 'U') IS NULL
+BEGIN
 CREATE TABLE [SqlXl].[RequestContext] (
     RequestID NVARCHAR(36) NOT NULL PRIMARY KEY,
     CtxVar001 NVARCHAR(MAX) NULL,
@@ -1333,8 +1351,11 @@ CREATE TABLE [SqlXl].[RequestContext] (
     CtxVar012 NVARCHAR(MAX) NULL,
     CreatedAt DATETIME2 NOT NULL DEFAULT SYSDATETIME()
 );--end create table 
+END
 go 
 
+IF OBJECT_ID('[SqlXl].[ColumnUIConfigurations]', 'U') IS NULL
+BEGIN
 CREATE TABLE [SqlXl].[ColumnUIConfigurations](
     [ID] [int] IDENTITY(1,1) NOT NULL,
     [SchemaName] [nvarchar](128) NOT NULL,
@@ -1353,9 +1374,10 @@ CREATE TABLE [SqlXl].[ColumnUIConfigurations](
     [ColumnName] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+END
 GO
 
-CREATE FUNCTION [SqlXl].[GenerateVarDeclarations]
+CREATE OR ALTER FUNCTION [SqlXl].[GenerateVarDeclarations]
 (	/*Note: this func depends on table BulkOpFeatures, so it's AFTER it...*/
     @BulkOpFeaturesID INT
 )
@@ -1384,6 +1406,8 @@ BEGIN
 END;--end func 
 GO
 
+IF OBJECT_ID('[SqlXl].[SavedQueries]', 'U') IS NULL
+BEGIN
 CREATE TABLE [SqlXl].SavedQueries (
     ID INT IDENTITY(1,1) PRIMARY KEY,
     SavedQueryName NVARCHAR(255) NOT NULL,
@@ -1391,9 +1415,12 @@ CREATE TABLE [SqlXl].SavedQueries (
     CreatedOnDate DATETIME2 DEFAULT SYSDATETIME(),
     LastModifiedOnDate DATETIME2 DEFAULT SYSDATETIME()
 );
+END
 go 
 
 --For debugging support...
+IF OBJECT_ID('[SqlXl].[DebugLog]', 'U') IS NULL
+BEGIN
 CREATE TABLE SqlXl.DebugLog (
     LogID INT IDENTITY(1,1) PRIMARY KEY,
 	LogTime datetime2 not null default sysutcdatetime(),
@@ -1401,6 +1428,7 @@ CREATE TABLE SqlXl.DebugLog (
 	InputParameters nvarchar(max) null,
 	LogInfo nvarchar(max) not null
 );
+END
 go 
 --***********end Tables 
 
@@ -1413,7 +1441,7 @@ View(s)...**/
 Stored Procedure(s)...**/
 
 --For debugging support...
-CREATE PROCEDURE SqlXl.DebugLogInsert
+CREATE OR ALTER PROCEDURE SqlXl.DebugLogInsert
     @RequestID NVARCHAR(36) = NULL,
     @InputParameters NVARCHAR(MAX) = NULL,
     @LogInfo NVARCHAR(MAX)
@@ -1436,7 +1464,7 @@ END;--end sproc
 GO
 
 --region ErrorIf...validations
-CREATE PROCEDURE [SqlXl].[ErrorIfSchemaDoesNotExist]
+CREATE OR ALTER PROCEDURE [SqlXl].[ErrorIfSchemaDoesNotExist]
 	@SchemaName NVARCHAR(128)
 AS
 BEGIN
@@ -1450,7 +1478,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [SqlXl].[ErrorIfTableDoesNotExist]
+CREATE OR ALTER PROCEDURE [SqlXl].[ErrorIfTableDoesNotExist]
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128)
 AS
@@ -1478,7 +1506,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [SqlXl].[ErrorIfColumnDoesNotExist]
+CREATE OR ALTER PROCEDURE [SqlXl].[ErrorIfColumnDoesNotExist]
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
 	@ColumnName nvarchar(128)
@@ -1522,7 +1550,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [SqlXl].[ErrorIfSprocDoesNotExist]
+CREATE OR ALTER PROCEDURE [SqlXl].[ErrorIfSprocDoesNotExist]
     @SprocName NVARCHAR(128),
 	@SchemaName NVARCHAR(128)
 AS
@@ -1539,7 +1567,7 @@ BEGIN
 end;--end sproc 
 go 
 
-CREATE PROCEDURE SqlXl.ErrorIfNoIntegerPrimaryKey
+CREATE OR ALTER PROCEDURE SqlXl.ErrorIfNoIntegerPrimaryKey
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128)
 AS
@@ -1600,7 +1628,7 @@ BEGIN
 END --end sproc 
 GO
 
-CREATE PROCEDURE SqlXl.ErrorIfNoRequestIDColumn
+CREATE OR ALTER PROCEDURE SqlXl.ErrorIfNoRequestIDColumn
 	@SchemaName nvarchar(128),
 	@TableName nvarchar(128)
 AS
@@ -1624,7 +1652,7 @@ BEGIN
 END --end sproc 
 GO 
 
-CREATE PROCEDURE SqlXl.ErrorIfColumnMismatch
+CREATE OR ALTER PROCEDURE SqlXl.ErrorIfColumnMismatch
 	@DomainSchemaName nvarchar(128),
 	@DomainTableName nvarchar(128),
 	@StagingSchemaName nvarchar(128),
@@ -1673,7 +1701,7 @@ BEGIN
 END --end sproc 
 GO 
 
-CREATE PROCEDURE [SqlXl].[ErrorIfInvalidGuid]
+CREATE OR ALTER PROCEDURE [SqlXl].[ErrorIfInvalidGuid]
     @RequestID NVARCHAR(36)
 AS
 BEGIN
@@ -1686,7 +1714,7 @@ BEGIN
 end;--end sproc 
 go 
 
-CREATE PROCEDURE [SqlXl].[ErrorIfNoUniqueDisplayColumn]
+CREATE OR ALTER PROCEDURE [SqlXl].[ErrorIfNoUniqueDisplayColumn]
     @SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128)
 AS
@@ -1734,7 +1762,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [SqlXl].[ErrorOnAnyBadFeatureParameter]
+CREATE OR ALTER PROCEDURE [SqlXl].[ErrorOnAnyBadFeatureParameter]
 (
     @BulkOpFeatureID INT
 )
@@ -1787,7 +1815,7 @@ BEGIN
 end; --end sproc 
 go
 
-CREATE PROCEDURE [SqlXl].[ErrorSelectedIdsNotAsExpected]
+CREATE OR ALTER PROCEDURE [SqlXl].[ErrorSelectedIdsNotAsExpected]
 	@SelectedIds NVARCHAR(MAX) -- "1,2,3,4"
 AS
 BEGIN
@@ -1817,7 +1845,7 @@ END;--end sproc
 GO
 --endregion
 
-CREATE PROCEDURE [SqlXl].[PurgeStagingForRequestID]
+CREATE OR ALTER PROCEDURE [SqlXl].[PurgeStagingForRequestID]
     @StagingTableName NVARCHAR(128),
 	@RequestID nvarchar(36)
 AS
@@ -1836,7 +1864,7 @@ BEGIN
 END; --end sproc
 GO
 
-CREATE PROCEDURE [SqlXl].[ListUniqueKeyConstraintsForTable]
+CREATE OR ALTER PROCEDURE [SqlXl].[ListUniqueKeyConstraintsForTable]
 (
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
@@ -1918,7 +1946,7 @@ BEGIN
 end --end sproc 
 go 
 
-CREATE PROCEDURE [SqlXl].[ValidateZZTemp_For_UPDATE_FEATURE_ForUniqueConstraintsReturnErrors]
+CREATE OR ALTER PROCEDURE [SqlXl].[ValidateZZTemp_For_UPDATE_FEATURE_ForUniqueConstraintsReturnErrors]
 (
 	@DomainSchemaName NVARCHAR(128),
     @DomainTableName NVARCHAR(128),
@@ -2024,7 +2052,7 @@ end --end sproc
 go 
 
 
-CREATE PROCEDURE [SqlXl].[CreateUniqueKeyConstraint]
+CREATE OR ALTER PROCEDURE [SqlXl].[CreateUniqueKeyConstraint]
 (
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
@@ -2045,7 +2073,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [SqlXl].[DropTableIfExists]
+CREATE OR ALTER PROCEDURE [SqlXl].[DropTableIfExists]
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128)
 AS
@@ -2068,7 +2096,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [SqlXl].[AttemptToUpdateOneSingleColumnInTheDestinationTableFromTheSourceTableAndReturnMessage] 
+CREATE OR ALTER PROCEDURE [SqlXl].[AttemptToUpdateOneSingleColumnInTheDestinationTableFromTheSourceTableAndReturnMessage] 
 /* This sproc is *NOT* designed to be performant or efficient
 but INSTEAD is designed to perform the most granular
 field-level validation possible.  It does this 
@@ -2177,7 +2205,7 @@ BEGIN
 END --end sproc 
 GO
 
-create PROCEDURE [SqlXl].[TransferData]
+CREATE OR ALTER PROCEDURE [SqlXl].[TransferData]
 (
 	@SourceSchemaName NVARCHAR(128),
 	@SourceTableName NVARCHAR(128),
@@ -2213,7 +2241,7 @@ BEGIN
 END;
 GO
 
-create PROCEDURE [SqlXl].[TransferDataForRequestID]
+CREATE OR ALTER PROCEDURE [SqlXl].[TransferDataForRequestID]
 (
 	@SourceSchemaName NVARCHAR(128),
 	@SourceTableName NVARCHAR(128),
@@ -2252,7 +2280,7 @@ BEGIN
 END;--end sproc
 GO
 
-CREATE PROCEDURE [SqlXl].[ProcessRawDataFromZZTemp]
+CREATE OR ALTER PROCEDURE [SqlXl].[ProcessRawDataFromZZTemp]
 (
 	@BulkOpsFeaturesID int,
 	@RequestID nvarchar(36),
@@ -2365,7 +2393,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE SqlXl.DropColumnFromTable
+CREATE OR ALTER PROCEDURE SqlXl.DropColumnFromTable
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
     @ColumnName NVARCHAR(128)
@@ -2387,7 +2415,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [SqlXl].[CreateNonAutoNumberPrimaryKey]
+CREATE OR ALTER PROCEDURE [SqlXl].[CreateNonAutoNumberPrimaryKey]
 (
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
@@ -2409,7 +2437,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [SqlXl].[CreateForeignKey]
+CREATE OR ALTER PROCEDURE [SqlXl].[CreateForeignKey]
 (
     @ForeignKeyConstraintName NVARCHAR(128),
 	@MainTableSchemaName NVARCHAR(128),
@@ -2442,7 +2470,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [SqlXl].[CreateForeignKeysOnStagingTable]
+CREATE OR ALTER PROCEDURE [SqlXl].[CreateForeignKeysOnStagingTable]
 (
 	@DomainSchemaName NVARCHAR(128),
 	@DomainTableName NVARCHAR(128),
@@ -2525,7 +2553,7 @@ DEALLOCATE ForeignKeyCursor
 END;
 GO
 
-CREATE PROCEDURE SqlXl.AddCheckConstraint
+CREATE OR ALTER PROCEDURE SqlXl.AddCheckConstraint
 	@SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
     @ConstraintName NVARCHAR(128),
@@ -2549,7 +2577,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [SqlXl].[CreateCheckConstraintsOnStagingTable]
+CREATE OR ALTER PROCEDURE [SqlXl].[CreateCheckConstraintsOnStagingTable]
 (	
 	@DomainSchemaName NVARCHAR(128),
 	@DomainTableName NVARCHAR(128),
@@ -2617,7 +2645,7 @@ BEGIN
 END;
 GO
 
-Create PROCEDURE [SqlXl].[ReScaffoldAStagingTable]
+CREATE OR ALTER PROCEDURE [SqlXl].[ReScaffoldAStagingTable]
 (
 	@DomainSchemaName NVARCHAR(128),
     @DomainTableName NVARCHAR(128),
@@ -2699,7 +2727,7 @@ BEGIN
 END;--end sproc 
 go 
 
-CREATE PROCEDURE SqlXl.UpdateDestinationTableFromSourceTableForRequestID
+CREATE OR ALTER PROCEDURE SqlXl.UpdateDestinationTableFromSourceTableForRequestID
 	@SourceSchemaName NVARCHAR(128),
     @SourceTableName NVARCHAR(128),
 	@DestinationSchemaName NVARCHAR(128),
@@ -2751,7 +2779,7 @@ BEGIN
 END; --end sproc 
 go 
 
-CREATE PROCEDURE [SqlXl].[DropZZTempAndPurgeStaging]
+CREATE OR ALTER PROCEDURE [SqlXl].[DropZZTempAndPurgeStaging]
     @PermanentStagingTableName NVARCHAR(128),
 	@RequestID nvarchar(36)
 AS
@@ -2773,7 +2801,7 @@ BEGIN
 END; --end sproc
 GO
 
-CREATE PROCEDURE [SqlXl].[RefreshMetaDataForTable]
+CREATE OR ALTER PROCEDURE [SqlXl].[RefreshMetaDataForTable]
 (
 	@DomainSchemaName NVARCHAR(128),
     @DomainTableName NVARCHAR(128)
@@ -2973,7 +3001,7 @@ BEGIN
 END;--end sproc 
 go
 
-CREATE PROCEDURE SqlXl.ExecuteDynamicScalarSelect
+CREATE OR ALTER PROCEDURE SqlXl.ExecuteDynamicScalarSelect
     @SqlScalarSelect nvarchar(max),
     @Result nvarchar(max) OUTPUT
 AS
@@ -2993,7 +3021,7 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE [SqlXl].[RefreshSampleValues]
+CREATE OR ALTER PROCEDURE [SqlXl].[RefreshSampleValues]
 (
 	@DomainSchemaName NVARCHAR(128),
     @DomainTableName NVARCHAR(128)
@@ -3047,7 +3075,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [SqlXl].[InsertSingleValidSampleRowToStagingGivenTheRealProdTableName]
+CREATE OR ALTER PROCEDURE [SqlXl].[InsertSingleValidSampleRowToStagingGivenTheRealProdTableName]
 (
 	@DomainSchemaName nvarchar(128),
 	@DomainTableName nvarchar(128),
@@ -3118,7 +3146,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [SqlXl].[GenerateTestData]
+CREATE OR ALTER PROCEDURE [SqlXl].[GenerateTestData]
 (
 	@DomainSchemaName NVARCHAR(128),
 	@DomainTableName NVARCHAR(128),
@@ -3175,7 +3203,7 @@ BEGIN
 END; --end sproc 
 GO
 
-CREATE PROCEDURE [SqlXl].[PrintScriptToDropAllSqlXlObjects]
+CREATE OR ALTER PROCEDURE [SqlXl].[PrintScriptToDropAllSqlXlObjects]
 AS
 BEGIN
 
@@ -3250,7 +3278,7 @@ PRINT @sql;
 END;--end sproc 
 GO 
 
-CREATE PROCEDURE [SqlXl].[ScaffoldAn_INSERT_Feature]
+CREATE OR ALTER PROCEDURE [SqlXl].[ScaffoldAn_INSERT_Feature]
 (
     @DomainSchemaName nvarchar(128),
 	@DomainTableName nvarchar(128),
@@ -3382,7 +3410,7 @@ end; --end sproc
 
 GO
 
-CREATE PROCEDURE [SqlXl].[ScaffoldAn_UPDATE_Feature]
+CREATE OR ALTER PROCEDURE [SqlXl].[ScaffoldAn_UPDATE_Feature]
 (
     @DomainSchemaName nvarchar(128),
 	@DomainTableName nvarchar(128),
@@ -3669,7 +3697,7 @@ GO
 
 --GO
 
-CREATE PROCEDURE [SqlXl].[Scaffold_INSERT_UPDATE_AND_DELETE_Features]
+CREATE OR ALTER PROCEDURE [SqlXl].[Scaffold_INSERT_UPDATE_AND_DELETE_Features]
 (
     @DomainSchemaName nvarchar(128),
 	@DomainTableName nvarchar(128),
@@ -3689,7 +3717,7 @@ BEGIN
 END; --end sproc 
 GO
 
-CREATE PROCEDURE [SqlXl].[Scaffold_ALL_TABLES_InsertUpdateAndDeleteFeatures]
+CREATE OR ALTER PROCEDURE [SqlXl].[Scaffold_ALL_TABLES_InsertUpdateAndDeleteFeatures]
 (
     @DomainSchemaName nvarchar(128),
 	@StagingSchemaName nvarchar(128) = 'SqlXl'
@@ -3746,7 +3774,7 @@ DEALLOCATE table_cursor;
 END; --end sproc 
 GO
 
-CREATE PROCEDURE [SqlXl].[ListColumNamesToAttemptToUpdateOnSingleValidStagingRow]
+CREATE OR ALTER PROCEDURE [SqlXl].[ListColumNamesToAttemptToUpdateOnSingleValidStagingRow]
 (	/*When attempting a series of statements like: 
 	update Staging_Persons_ForUpdates
 		set SomeColumn = (select SomeValueFromZZTemp from #ZZTemp where ZZTemp_ID = @ID);
@@ -3810,7 +3838,7 @@ BEGIN
 end --end sproc 
 go 
 
-CREATE PROCEDURE [SqlXl].[ValidateZZTemp_For_INSERT_FEATURE_ForUniqueConstraintsReturnErrors]
+CREATE OR ALTER PROCEDURE [SqlXl].[ValidateZZTemp_For_INSERT_FEATURE_ForUniqueConstraintsReturnErrors]
 (
 	@DomainSchemaName NVARCHAR(128),
     @DomainTableName NVARCHAR(128),
@@ -3902,7 +3930,7 @@ BEGIN
 end --end sproc 
 go 
 
-CREATE PROCEDURE [SqlXl].[PurgeStagingValidateZZTempAndReturnErrors]
+CREATE OR ALTER PROCEDURE [SqlXl].[PurgeStagingValidateZZTempAndReturnErrors]
 (
 	@BulkOpFeaturesID int,
 	@RequestID nvarchar(36),
@@ -4154,7 +4182,7 @@ BEGIN
 END; --end sproc 
 GO
 
-CREATE PROCEDURE [SqlXl].SavedQueryInsert
+CREATE OR ALTER PROCEDURE [SqlXl].SavedQueryInsert
     @SavedQueryName NVARCHAR(255),
     @SavedQueryText NVARCHAR(MAX)
 AS
@@ -4166,7 +4194,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [SqlXl].SavedQueryUpdate
+CREATE OR ALTER PROCEDURE [SqlXl].SavedQueryUpdate
     @ID INT,
     @SavedQueryText NVARCHAR(MAX)
 AS
@@ -4180,7 +4208,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE [SqlXl].[SavedQueries_CreateSamples_ALL_TABLES]
+CREATE OR ALTER PROCEDURE [SqlXl].[SavedQueries_CreateSamples_ALL_TABLES]
 (
 @DomainSchemaName nvarchar(128)
 )
@@ -4245,7 +4273,7 @@ DEALLOCATE table_cursor;
 END; --end sproc
 GO
 
-create PROCEDURE [SqlXl].[ValidateThenRunSelectQueryReturnJsonMetadataAndData]
+CREATE OR ALTER PROCEDURE [SqlXl].[ValidateThenRunSelectQueryReturnJsonMetadataAndData]
     @Query NVARCHAR(MAX)
 AS
 BEGIN
@@ -4409,7 +4437,7 @@ go
 -- GetMenuItems sproc removed: was a SlappFramework web UI navigation helper
 -- (ControllerName/ActionName/QueryString) with no relevance to the SqlXL CLI.
 
-CREATE PROCEDURE [SqlXl].[GetDropdownOptionsForFeature]
+CREATE OR ALTER PROCEDURE [SqlXl].[GetDropdownOptionsForFeature]
     @FeatureID INT,
     @ReturnAsJson BIT = 0  --0 = DataTable, 1 = JSON
 AS
@@ -4497,7 +4525,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [SqlXl].[GetRowsToChooseFrom]
+CREATE OR ALTER PROCEDURE [SqlXl].[GetRowsToChooseFrom]
 	@FeatureID int 
 AS
 BEGIN
@@ -4521,7 +4549,7 @@ BEGIN
 END --end sproc
 GO
 
-CREATE PROCEDURE [SqlXl].[GetMeta_ColumnsForTableAsJson]
+CREATE OR ALTER PROCEDURE [SqlXl].[GetMeta_ColumnsForTableAsJson]
 	@FeatureID int 
 AS
 BEGIN
@@ -4563,7 +4591,7 @@ BEGIN
 END --end sproc
 GO
 
-CREATE PROCEDURE [SqlXl].[ValidateThenRunSelectStatement]
+CREATE OR ALTER PROCEDURE [SqlXl].[ValidateThenRunSelectStatement]
     @SelectStatement NVARCHAR(MAX)
 AS
 BEGIN
@@ -4627,7 +4655,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [SqlXl].[GetFormStarterData]
+CREATE OR ALTER PROCEDURE [SqlXl].[GetFormStarterData]
 	@FeatureID int 
 AS
 BEGIN
@@ -4713,7 +4741,7 @@ BEGIN
 END --end sproc
 GO
 
-CREATE PROCEDURE [SqlXl].[PrintDebugScript]
+CREATE OR ALTER PROCEDURE [SqlXl].[PrintDebugScript]
 	@BulkOpsFeatureID int,
 	@SchemaName NVARCHAR(128),
     @ProcedureName NVARCHAR(128)
@@ -4789,7 +4817,7 @@ BEGIN
 END;--end sproc 
 GO
 
-CREATE PROCEDURE [SqlXl].[GetExcelTemplateData]
+CREATE OR ALTER PROCEDURE [SqlXl].[GetExcelTemplateData]
     @FeatureID INT,
 	@SelectedIds NVARCHAR(MAX) = NULL -- Optional parameter
 AS
@@ -4871,7 +4899,7 @@ BEGIN
 END;--end sproc 
 go 
 
-CREATE PROCEDURE [SqlXl].[GetStartingPointData]
+CREATE OR ALTER PROCEDURE [SqlXl].[GetStartingPointData]
 	@FeatureID INT
 AS
 BEGIN
@@ -4898,7 +4926,7 @@ BEGIN
 END --end sproc
 GO
 
-CREATE PROCEDURE [SqlXl].[GetRowsToEdit]
+CREATE OR ALTER PROCEDURE [SqlXl].[GetRowsToEdit]
 	@FeatureID INT,
 	@SelectedIds NVARCHAR(MAX) -- "1,2,3,4"
 AS
