@@ -3301,7 +3301,7 @@ BEGIN
 	declare @GetRowsToEdit_SelectStatement nvarchar(max) =
 		SqlXl.GenerateSelectStatementToResultInOneValidRow(@DomainSchemaName, @DomainTableName);
 
-	set @UserFriendlyFeatureName = 'Add ' + @DomainTableName + ' - Bulk Grid';
+	set @UserFriendlyFeatureName = 'Insert ' + @DomainTableName + ' - Bulk Import';
 
 	-- Make a staging table name like 'Staging_MyTable001' for example...
 	SET @StagingTableName = SqlXl.ProposeStagingTableNameForInsertFeature(@DomainTableName);
@@ -3429,7 +3429,7 @@ BEGIN
 	DECLARE @StagingTableName [NVARCHAR](128) = '';
 	DECLARE @SprocToProcessPerfectStagedData NVARCHAR(128) = '';
     
-	SET @UserFriendlyFeatureName = 'Edit ' + @DomainTableName + ' - Find & Edit';
+	SET @UserFriendlyFeatureName = 'Update ' + @DomainTableName + ' - Bulk Update';
 
 	-- Make a staging table name like 'Staging_MyTable001' for example...
 	SET @StagingTableName = SqlXl.ProposeStagingTableNameForUpdateFeature(@DomainTableName);
@@ -3586,118 +3586,10 @@ BEGIN
 		AND InsertUpdateDeleteOrCustom = 'Update';
 	END
 
-end; --end sproc 
+end; --end sproc
 GO
 
---CREATE PROCEDURE [SqlXl].[ScaffoldA_DELETE_Feature]
---(
---    @DomainSchemaName nvarchar(128),
---	@DomainTableName nvarchar(128)
---)
---AS
---BEGIN
---	--Validate params...
---	EXEC SqlXl.ErrorIfSchemaDoesNotExist @DomainSchemaName;
---	EXEC SqlXl.ErrorIfTableDoesNotExist @DomainSchemaName, @DomainTableName;
---	EXEC SqlXl.ErrorIfNoIntegerPrimaryKey @DomainSchemaName, @DomainTableName;
-
---	DECLARE @SQL NVARCHAR(MAX) = '';
---	DECLARE @UserFriendlyFeatureName NVARCHAR(255) = '';	
---	DECLARE @SprocToProcessPerfectStagedData NVARCHAR(128) = '';
-    
---	--Auto-create a bulk delete feature...
---	set @UserFriendlyFeatureName = 'Remove ' + @DomainTableName + ' - Find & Remove';
-	
---	--Create a sproc to delete row(s) from production table given primary key values in ZZTemp...
---	SET @SQL = 
---	N'CREATE PROCEDURE ' + @DomainSchemaName + '.' + @DomainTableName + '_DeleteRowsPerZZTemp
---		AS
---		BEGIN
---			SET NOCOUNT ON;
-			
---			--********************
---			-- Note: 
---			-- Be sure to handle deletes for related table(s) HERE FIRST, 
---			-- prior to deleting from "parent" table.
---			--**************************
---			--Determine expected number of deletions...
---			declare @RequestedDeletions int = 
---			(select count(distinct ' + SqlXl.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName) + ' ) from #ZZTemp);
-
---			-- Delete row(s) from ProductionTable based on PrimaryKeyColumn expected in #ZZTemp...
---			delete from  ' + @DomainSchemaName + '.' + @DomainTableName + '  
---			where ' + SqlXl.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName) + ' in (select distinct ' + SqlXl.GetPrimaryKeyColumnName(@DomainSchemaName,@DomainTableName) + '  from #ZZTemp);
-
---			--Determine ACTUAL number of deletions...
---			declare @ActualDeletions int = @@ROWCOUNT;	
-
---			--If deletions happened as expected...
---			if @RequestedDeletions > 0 
---			and @RequestedDeletions = @ActualDeletions 
---			begin
---				-- return success information datatable...
---				SELECT IsSuccessful = ''true'', 
---				RowsInserted = 0, 
---				RowsUpdated = 0,
---				RowsDeleted = @ActualDeletions
-         
---				--Return empty errors listing, too...
---				select Msg from #Messages;
---			end --end if 
-
---			--Else return failure...
---			else
---			begin
---				--Load an error message...
---				insert #Messages (
---				Msg)
---				select Msg = 
---				''An unexpected number of deletion(s) occurred. '' +   
---				''Requested distinct deletions: '' + convert(nvarchar, @RequestedDeletions) + 
---				'' , Actual deletions: '' + convert(nvarchar, @ActualDeletions)
---				;--end insert-select 
-
---				SELECT IsSuccessful = ''false'', 
---				RowsInserted = 0, 
---				RowsUpdated = 0,
---				RowsDeleted = @ActualDeletions
-         
---				select Msg from #Messages;
---			end --end else 
-
---		END --end sproc ';
---	EXEC sp_executesql @SQL;
-	
---	--Note the name of sproc that was just created...
---	set @SprocToProcessPerfectStagedData = @DomainTableName + '_DeleteRowsPerZZTemp';
-
---	--Insert a record for this newly created feature...
---	INSERT SqlXl.BulkOpFeatures
---	(
---	    UserFriendlyFeatureName,
---		InsertUpdateDeleteOrCustom,
---	    DomainSchemaName,
---	    DomainTableName,
---	    StagingSchemaName,
---	    StagingTableName,
---	    SprocToProcessPerfectStagedData,
---	    MenuDisplayRanking
---	)
---	VALUES
---	(   @UserFriendlyFeatureName,    -- UserFriendlyFeatureName - nvarchar(255)
---		'Delete',--InsertUpdateDeleteOrCustom
---	    @DomainSchemaName,    -- DomainSchemaName - nvarchar(128)
---	    @DomainTableName,    -- DomainTableName - nvarchar(128)
---	    'SqlXl',    -- StagingSchemaName - nvarchar(128)
---	    'NotApplicableForBulkDelete',    -- StagingTableName - nvarchar(128)
---	    @SprocToProcessPerfectStagedData,    -- SprocToProcessPerfectStagedData - nvarchar(128)
---	    30 -- MenuDisplayRanking - int
---	);--end insert 
---end; --end sproc 
-
---GO
-
-CREATE OR ALTER PROCEDURE [SqlXl].[Scaffold_INSERT_UPDATE_AND_DELETE_Features]
+CREATE OR ALTER PROCEDURE [SqlXl].[Scaffold_INSERT_AND_UPDATE_Features]
 (
     @DomainSchemaName nvarchar(128),
 	@DomainTableName nvarchar(128),
@@ -3711,13 +3603,11 @@ BEGIN
 	EXEC SqlXl.ScaffoldAn_INSERT_Feature @DomainSchemaName, @DomainTableName, @StagingSchemaName;
 
 	EXEC SqlXl.ScaffoldAn_UPDATE_Feature @DomainSchemaName, @DomainTableName, @StagingSchemaName;
-	
-	--EXEC SqlXl.ScaffoldA_DELETE_Feature @DomainSchemaName, @DomainTableName;
-	
+
 END; --end sproc 
 GO
 
-CREATE OR ALTER PROCEDURE [SqlXl].[Scaffold_ALL_TABLES_InsertUpdateAndDeleteFeatures]
+CREATE OR ALTER PROCEDURE [SqlXl].[Scaffold_ALL_TABLES_InsertAndUpdateFeatures]
 (
     @DomainSchemaName nvarchar(128),
 	@StagingSchemaName nvarchar(128) = 'SqlXl'
@@ -3759,7 +3649,7 @@ FETCH NEXT FROM table_cursor INTO @DomainTableName;
 -- Loop through the rows
 WHILE @@FETCH_STATUS = 0
 BEGIN
-	EXEC SqlXl.Scaffold_INSERT_UPDATE_AND_DELETE_Features @DomainSchemaName, @DomainTableName, @StagingSchemaName;
+	EXEC SqlXl.Scaffold_INSERT_AND_UPDATE_Features @DomainSchemaName, @DomainTableName, @StagingSchemaName;
 	
     -- Fetch the next row
     FETCH NEXT FROM table_cursor INTO @DomainTableName;
