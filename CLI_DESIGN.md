@@ -181,6 +181,73 @@ Command: `import`
 
 ---
 
+## Schema Bootstrapping — `sqlxl infer`
+
+A pre-Tier-1 helper. Given an Excel file with no destination table yet, infer
+column types from the data and emit a `CREATE TABLE` statement. The output is
+reviewed by a SQL pro and run manually — `infer` never executes DDL itself.
+
+```bash
+# Print DDL to stdout (pipe-friendly)
+sqlxl infer products.xlsx --sheet Products
+
+# Pipe directly to sqlcmd
+sqlxl infer products.xlsx --sheet Products | sqlcmd -d MyDb
+
+# Write to a file plus a JSON inference report
+sqlxl infer products.xlsx --sheet Products --output products.sql --report products.json
+
+# Strict: any invalid value in a column forces NVARCHAR fallback for that column
+sqlxl infer products.xlsx --sheet Products --mode strict
+```
+
+Unlike `insert` / `update` / `import`, `infer` does not connect to SQL Server.
+It reads the local xlsx and emits text. No `--connection` or `--profile`.
+
+**Why this doesn't defeat the validation guarantee:** `infer` produces DDL,
+not data. The user reviews and runs the `CREATE TABLE` themselves. Once the
+table exists, every subsequent `sqlxl insert --table ...` is bound by
+whatever constraints the user kept. So `infer` sits *upstream* of the
+staging-validation pipeline — it bootstraps the validator, then hands the
+user back to the validated tier model.
+
+**Key design decisions:**
+
+- **DDL never executes automatically.** Output goes to stdout (or `--output`).
+  The user's review of the `CREATE TABLE` is the deliberate accountability
+  step in the workflow.
+- **Next-step hint to stderr.** After emitting the DDL, prints a three-step
+  guide on stderr — `sqlcmd ... -i <ddl-file>` then
+  `sqlxl insert --table ... --file ...` — pre-filled with the user's actual
+  table name and input file. Lowers the friction of remembering the
+  next-command syntax without crossing into auto-execute. Suppress with
+  `2>/dev/null` if you don't want it.
+- **Stdout = clean DDL, stderr = everything else** (status, warnings, errors).
+  Makes piping into `sqlcmd` trivial without filtering.
+- **Honest warnings.** Invalid values produce stderr notes
+  (`[Price] 1 value(s) did not parse as DECIMAL — would become NULL on import;
+  marking column NULLABLE`) so a skimming reviewer still sees what they're
+  agreeing to.
+- **Multi-sheet handling is explicit.** A workbook with more than one sheet
+  refuses to auto-pick — `--sheet <name>` is required, with the full sheet
+  list (hidden sheets marked) shown on error.
+- **Deterministic.** Same input always produces same output. US date format
+  is the default for ambiguous numeric dates (`3/4/2024` = March 4); use
+  `--date-format iso` to refuse all ambiguous numeric dates.
+- **Permissive vs strict modes.** Permissive (default) lets a column be
+  inferred as a strict type even if a few values fail to parse — those would
+  become NULL on import, and the column is marked NULLABLE in the DDL to
+  match. Strict mode rejects any candidate type with a single invalid value,
+  forcing NVARCHAR fallback.
+- **Supported types:** `BIT`, `INT`, `BIGINT`, `DECIMAL(p,s)`, `FLOAT`,
+  `DATETIME2`, `NVARCHAR(n)`, `NVARCHAR(MAX)`. Anything that doesn't meet
+  the configured confidence threshold for a stricter type falls back to
+  NVARCHAR.
+
+Full inference algorithm: see `SPEC_SCHEMA_INFERENCE_IDEA.md`.
+
+---
+
 ## Validation Behavior (all tiers)
 
 - Data is bulk-copied to the staging table
@@ -223,7 +290,42 @@ sqlxl import --feature 7 --file data.xlsx
 
 ---
 
-## Additional Flags (all commands)
+## Workflow Example (Bootstrap from spreadsheet — `infer` → `insert`)
+
+When you have a spreadsheet but no destination table yet:
+
+```bash
+# Step 1 — generate DDL from the spreadsheet
+sqlxl infer products.xlsx --sheet Products --table Products --output products.sql
+# => emits CREATE TABLE [dbo].[Products] (...); review stderr warnings
+
+# Step 2 — review and (optionally) edit products.sql
+#   common edits: add Id INT IDENTITY(1,1) PRIMARY KEY, FKs, indexes,
+#   tighten types (e.g. NVARCHAR(50) → NVARCHAR(20)) where the data allows.
+
+# Step 3 — apply the DDL to your database (any tool; sqlxl does NOT execute DDL)
+sqlcmd -S <server> -d <database> -E -i products.sql
+
+# Step 4 — load the spreadsheet through staging-table validation
+sqlxl insert --table dbo.Products --file products.xlsx
+```
+
+The same xlsx is used in step 1 and step 4 — no reformatting needed. `infer`
+shaped the table to match the file, so `sqlxl insert` can skip its own
+template-export and go straight to import. Staging validation runs on this
+load and every load after.
+
+**Adding a primary key in step 2** is safe: when `sqlxl insert` scaffolds the
+staging table, it excludes `IDENTITY` columns by convention. The file shape
+still matches the staging shape, so the import works without an `Id` column
+in the spreadsheet.
+
+---
+
+## Additional Flags (data commands)
+
+These apply to `insert`, `update`, `import`, `export`, and `test`. (`infer` is
+connectionless and has its own flag set — see the `sqlxl infer` section above.)
 
 | Flag | Description |
 |------|-------------|
@@ -299,9 +401,31 @@ All required capabilities (cell styling, data validation, sheet protection, drop
 - **`--quiet` / `--json` output flags** — for agent/scripting contexts.
 - **Code signing** — increases trust in enterprise environments; can be added post-publish.
 - **`--where` quoting docs** — shell quoting of SQL fragments needs clear guidance in docs.
-- **Excel → SQL Server schema inference (`sqlxl infer`?)** — given an Excel file, infer column types from the data and generate a `CREATE TABLE` statement. Useful for quickly bootstrapping a table from a spreadsheet without hand-writing DDL. A detailed feature spec already exists at `SPEC_SCHEMA_INFERENCE_IDEA.md` in the repo root — refer to that before implementing.
+- ~~**Excel → SQL Server schema inference (`sqlxl infer`)**~~ ✅ — Shipped. `sqlxl infer <file.xlsx>` reads an Excel file and emits `CREATE TABLE` DDL inferred from the data; never executes DDL itself. See the `Schema Bootstrapping — sqlxl infer` section above for design rationale and the spec at `SPEC_SCHEMA_INFERENCE_IDEA.md` for the full inference algorithm.
+- **Automated tests for `sqlxl infer` engine** — no unit tests exist yet. Smoke tests cover the happy path but edge cases (DECIMAL precision overflow → FLOAT fallback, `--mode strict` boundary behavior, all-null columns, NVARCHAR(MAX) trigger above 4000 chars, `--date-format iso` rejecting US-only formats, duplicate header detection) are not regression-protected. Estimated ~3–4 hrs including test project scaffold (none exists in the repo today). The engine — `Core/SchemaInference/SchemaInferrer.cs` plus `TypeEvaluators.cs` — is pure with no I/O, so unit testing is straightforward.
 - ~~**`--config <path>` / `SQLXL_CONFIG` env var for CI/CD**~~ ✅ — Shipped. Resolution order: `--config` flag > `SQLXL_CONFIG` env var > `~/.sqlxl/config.json` default. Override applies to both reads and writes. `--config` is pre-parsed at startup in `Program.cs` so it works as a global flag on any command without per-command plumbing. See `Config/ConfigLocator.cs`.
 - **Bulk update concurrency (lost update problem)** — current behavior is last-write-wins. User A and User B can both pull a template from the same state, User A submits first, then User B's submit silently clobbers A's changes. The standard SQL Server fix is optimistic concurrency via a `rowversion` column: export includes the rowversion, the `_UpdateFromStaging` sproc checks it on UPDATE, and rows where the version has changed since the template was pulled are returned as conflicts rather than silently overwritten. Realistic implementation path: `ScaffoldAn_UPDATE_Feature` detects a `rowversion` column on the domain table and wires in the conflict check automatically — tables without one get last-write-wins as today, with a warning on export. This requires schema changes to domain tables, staging tables, and the scaffolded update sproc. Not blocking for v1.0 since bulk updates in practice are usually coordinated, but worth addressing if SqlXL is used in high-concurrency environments.
+
+---
+
+## Next steps to publish v1.1.0
+
+`sqlxl infer` is the headline addition for v1.1.0 (semver minor — new feature, no breaking changes). Before pushing to NuGet:
+
+1. **Edge-case smoke tests** for paths the initial smoke tests didn't exercise:
+   - Single-sheet workbook (auto-pick, no `--sheet` required)
+   - `--mode strict` end-to-end against a file with a few invalid values
+   - `--date-format iso` rejecting `M/d/yyyy` dates
+   - All-null column → falls back to `NVARCHAR(255)` with the right warning
+   - Column wider than 4000 chars → triggers `NVARCHAR(MAX)`
+
+2. **Pack + install-from-local + run.** `dotnet pack` produces the `.nupkg`; install it as a global tool from the local source and run `sqlxl infer` once. Catches any "works under `dotnet run` but breaks when installed" issue — particularly worth doing because `infer`'s code path is connectionless and exercises packaging differently from the data commands already battle-tested in v1.0.
+
+3. **Update `PackageReleaseNotes`** in `SqlXl.csproj` with the v1.1.0 changes (new `infer` command, connectionless schema bootstrap, next-steps stderr UX).
+
+4. **Version bump in `SqlXl.csproj`:** `1.0.1` → `1.1.0`.
+
+5. **Pack and publish:** `dotnet pack` then `dotnet nuget push bin/Release/SqlXl.1.1.0.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json`.
 
 ---
 
@@ -317,5 +441,5 @@ Tables containing these types will not work correctly with the Excel import/expo
 
 ---
 
-*Last updated: 2026-04-20*
-*Status: All v1.0 blockers resolved. Ready to publish as v1.0 stable.*
+*Last updated: 2026-04-26*
+*Status: All v1.0 blockers resolved. Ready to publish as v1.0 stable. `sqlxl infer` shipped post-v1.0.*

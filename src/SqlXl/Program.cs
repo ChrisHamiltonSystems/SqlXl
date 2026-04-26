@@ -42,6 +42,8 @@ app.Configure(config =>
         .WithDescription("Export SQL query results to Excel (requires sqlxl init)");
     config.AddCommand<TestCommand>("test")
         .WithDescription("Auto-generate and run test data against all configured features for a table");
+    config.AddCommand<InferCommand>("infer")
+        .WithDescription("Read an Excel file and emit a CREATE TABLE statement inferred from the data");
     config.AddCommand<DemoCommand>("demo")
         .WithDescription("Create the SqlXlDemo database with sample data (drops and recreates)");
 });

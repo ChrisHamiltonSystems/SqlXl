@@ -56,7 +56,31 @@ sqlxl use demo
 sqlxl insert --table dbo.Products
 ```
 
+**Have a spreadsheet but no destination table yet?**
+
+```bash
+sqlxl infer your-data.xlsx --output schema.sql
+# review schema.sql, edit if needed, then apply it (sqlcmd, SSMS, etc.)
+sqlxl insert --table dbo.YourTable --file your-data.xlsx
+```
+
+(Assumes `sqlxl init` has been run against your database. `infer` itself is connectionless — it reads the local xlsx and emits text.)
+
 ## Commands
+
+### `sqlxl infer` — bootstrap a table from a spreadsheet
+
+Have a spreadsheet but no destination table yet? `infer` reads the file and emits a `CREATE TABLE` statement with column types inferred from the data. The DDL is for you to review and run yourself — `infer` never executes it.
+
+```bash
+# Print DDL to stdout (pipe-friendly)
+sqlxl infer products.xlsx --sheet Products --table Products
+
+# Write DDL to a file plus a JSON inference report
+sqlxl infer products.xlsx --sheet Products --table Products --output products.sql --report products.json
+```
+
+After you apply the DDL (any tool — `sqlcmd`, SSMS, etc.), the same xlsx loads through the validated `sqlxl insert` pipeline below. No reformatting needed.
 
 ### `sqlxl insert` — bulk-insert new rows
 
