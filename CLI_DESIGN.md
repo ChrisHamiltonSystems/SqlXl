@@ -293,7 +293,7 @@ All required capabilities (cell styling, data validation, sheet protection, drop
 
 ### Post-v1.0 backlog (do not block publish on these)
 
-- **Schema drift / `sqlxl refresh --table`** — re-scaffold staging table and sproc when domain table columns change after initial scaffold. Important long-term but rarely hit in practice.
+- **Schema drift / `sqlxl refresh --table`** — re-scaffold staging table and sproc when domain table columns change after initial scaffold. Any team using SqlXL on a live, evolving domain table will hit this within a quarter; not blocking for v1.0 but high-priority post-launch. A detailed feature spec exists at `SPEC_SCHEMA_REFRESH_IDEA.md` in the repo root — refer to that before implementing.
 - **`sqlxl test` unique constraint limitation** — `GenerateTestData` uses fixed sample values; second run fails on unique columns. Workaround: `sqlxl demo --yes` to reset. Long-term fix: append timestamp/GUID to string sample values.
 - **Multi-feature ambiguity** — if `dbo.Products` has two INSERT features in `BulkOpFeatures`, `insert --table` should fail loudly and tell the user to use `import --feature` directly.
 - **`--quiet` / `--json` output flags** — for agent/scripting contexts.
