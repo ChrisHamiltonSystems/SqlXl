@@ -161,6 +161,27 @@ sqlxl insert --table dbo.Products --connection "Server=...;Database=...;"
 
 **Security:** Windows Auth connection strings (no password) are stored as plain text — there is nothing to protect. SQL Auth connection strings are automatically encrypted with Windows DPAPI, bound to your user account and machine.
 
+## Custom config file location
+
+By default, profiles live in `~/.sqlxl/config.json`. You can override that location for any command — useful for CI/CD pipelines, shared team config files, or running multiple SqlXL configurations side-by-side on the same machine.
+
+```bash
+# Per-command override
+sqlxl insert --table dbo.Products --config /shared/team-sqlxl-config.json
+
+# Persistent override via environment variable
+export SQLXL_CONFIG=/shared/team-sqlxl-config.json
+sqlxl insert --table dbo.Products
+```
+
+**Resolution order** for the config file location (highest to lowest priority):
+
+1. `--config <path>` flag
+2. `SQLXL_CONFIG` environment variable
+3. `~/.sqlxl/config.json` (default)
+
+The override applies to both reads and writes — `sqlxl init --config /path/to/file.json` will write the new profile to that file.
+
 ## Requirements
 
 - .NET 8.0 or later
@@ -170,3 +191,5 @@ sqlxl insert --table dbo.Products --connection "Server=...;Database=...;"
 ## License
 
 MIT — see [LICENSE](LICENSE)
+
+Copyright (c) 2026 Chris Hamilton

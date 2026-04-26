@@ -25,6 +25,9 @@ public class ConnectionsListCommand : Command<ConnectionsListCommand.Settings>
             return 1;
         }
 
+        AnsiConsole.MarkupLine($"Config: [grey]{Markup.Escape(SqlXlConfig.ConfigFilePath)}[/]");
+        AnsiConsole.WriteLine();
+
         if (config.Profiles.Count == 0)
         {
             AnsiConsole.MarkupLine("[grey]No profiles configured.[/]");
@@ -32,9 +35,6 @@ public class ConnectionsListCommand : Command<ConnectionsListCommand.Settings>
             AnsiConsole.WriteLine();
             return 0;
         }
-
-        AnsiConsole.MarkupLine($"Config: [grey]{Markup.Escape(SqlXlConfig.ConfigFilePath)}[/]");
-        AnsiConsole.WriteLine();
 
         foreach (var (name, entry) in config.Profiles)
         {

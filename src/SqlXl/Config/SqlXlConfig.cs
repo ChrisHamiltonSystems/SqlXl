@@ -9,9 +9,7 @@ namespace SqlXl.Config;
 
 public class SqlXlConfig
 {
-    private static readonly string ConfigPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        ".sqlxl", "config.json");
+    private static string ConfigPath => ConfigLocator.ResolvePath();
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private static readonly Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);

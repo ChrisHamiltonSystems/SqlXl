@@ -1,5 +1,20 @@
+using Spectre.Console;
 using Spectre.Console.Cli;
 using SqlXl.Commands;
+using SqlXl.Config;
+
+string[] cleanedArgs;
+try
+{
+    var (cleaned, overridePath) = ConfigLocator.ExtractFromArgs(args);
+    ConfigLocator.SetOverride(overridePath);
+    cleanedArgs = cleaned;
+}
+catch (ArgumentException ex)
+{
+    AnsiConsole.MarkupLine($"[red]Error:[/] {Markup.Escape(ex.Message)}");
+    return 1;
+}
 
 var app = new CommandApp();
 app.Configure(config =>
@@ -31,4 +46,4 @@ app.Configure(config =>
         .WithDescription("Create the SqlXlDemo database with sample data (drops and recreates)");
 });
 
-return app.Run(args);
+return app.Run(cleanedArgs);
