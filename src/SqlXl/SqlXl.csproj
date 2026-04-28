@@ -15,7 +15,7 @@
 
     <!-- NuGet package identity -->
     <PackageId>SqlXl</PackageId>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <Authors>Chris Hamilton</Authors>
     <Copyright>Copyright (c) 2026 Chris Hamilton</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -28,7 +28,7 @@
     <PackageTags>sql;sqlserver;excel;bulk-import;bulk-export;dba;data-tools;cli;dotnet-tool</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReleaseNotes>1.0.1: Add project website link (runsqlxl.com). No functional changes.</PackageReleaseNotes>
+    <PackageReleaseNotes>1.1.0: Add --config flag and SQLXL_CONFIG env var for custom config file path. Add `sqlxl infer` command for Excel → SQL Server schema inference.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
