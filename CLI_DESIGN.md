@@ -380,12 +380,12 @@ SqlXL is **MIT licensed**. All dependencies must be MIT-compatible.
 | 2 | ~~**`sqlxl import --feature N`**~~ ✅ | Tier 3 command — completes the three-tier design. RBAC demo (Users/Roles/UserRoles) end-to-end verified. |
 | 3 | ~~**Connection string persistence**~~ ✅ | Named profiles in `~/.sqlxl/config.json`. DPAPI encryption for SQL Auth. `sqlxl use <profile>`, `sqlxl connections list/remove`. Resolution chain: `--connection` > `SQLXL_CONNECTION` env var > `--profile` flag > active profile. |
 | 4 | ~~**Delete old `ExportCommand` / `ImportCommand`**~~ ✅ | Both commands were fully rewritten as part of the new design — no dead code remains. |
-| 5 | **NuGet package metadata** | Description, tags, icon, authors, project URL, license expression in `.csproj` |
-| 6 | **Basic README** | Install instructions, quickstart, connection string example |
+| 5 | ~~**NuGet package metadata**~~ ✅ | Description, tags, icon, authors, project URL, license expression in `.csproj` |
+| 6 | ~~**Basic README**~~ ✅ | Install instructions, quickstart, connection string example |
 
 ### Known issues (present in v1.0-beta, fix before v1.0 stable)
 
-~~**`sqlxl init` is not idempotent**~~ ✅ — Fixed in commit `0bb2ceb`. All DDL in `CreateInfrastructure.sql` is guarded with `IF NOT EXISTS` / `IF OBJECT_ID IS NULL` / `CREATE OR ALTER`. Re-running `init` against an existing database is safe.
+~~**`sqlxl init` is not idempotent**~~ ✅ — Partially fixed in commit `0bb2ceb` (table/sproc DDL). Fully fixed in v1.2.0: `CREATE OR ALTER FUNCTION` on `TableExists`, `SprocExists`, and `ColumnExists` now drops and re-adds their referencing check constraints, so re-running `init` on an already-configured database is safe in all cases.
 
 ### Post-v1.0 backlog (do not block publish on these)
 
@@ -396,30 +396,28 @@ SqlXL is **MIT licensed**. All dependencies must be MIT-compatible.
 - **Code signing** — increases trust in enterprise environments; can be added post-publish.
 - **`--where` quoting docs** — shell quoting of SQL fragments needs clear guidance in docs.
 - ~~**Excel → SQL Server schema inference (`sqlxl infer`)**~~ ✅ — Shipped. `sqlxl infer <file.xlsx>` reads an Excel file and emits `CREATE TABLE` DDL inferred from the data; never executes DDL itself. See the `Schema Bootstrapping — sqlxl infer` section above for design rationale and the spec at `SPEC_SCHEMA_INFERENCE_IDEA.md` for the full inference algorithm.
-- **Automated tests for `sqlxl infer` engine** — no unit tests exist yet. Smoke tests cover the happy path but edge cases (DECIMAL precision overflow → FLOAT fallback, `--mode strict` boundary behavior, all-null columns, NVARCHAR(MAX) trigger above 4000 chars, `--date-format iso` rejecting US-only formats, duplicate header detection) are not regression-protected. Estimated ~3–4 hrs including test project scaffold (none exists in the repo today). The engine — `Core/SchemaInference/SchemaInferrer.cs` plus `TypeEvaluators.cs` — is pure with no I/O, so unit testing is straightforward.
+- **Automated tests for `sqlxl infer` engine** — no unit tests exist yet. `smoke-test.ps1` (added in v1.2.0) covers the happy path end-to-end, but edge cases (DECIMAL precision overflow → FLOAT fallback, `--mode strict` boundary behavior, all-null columns, NVARCHAR(MAX) trigger above 4000 chars, `--date-format iso` rejecting US-only formats, duplicate header detection) are not regression-protected. Estimated ~3–4 hrs including test project scaffold (none exists in the repo today). The engine — `Core/SchemaInference/SchemaInferrer.cs` plus `TypeEvaluators.cs` — is pure with no I/O, so unit testing is straightforward.
 - ~~**`--config <path>` / `SQLXL_CONFIG` env var for CI/CD**~~ ✅ — Shipped. Resolution order: `--config` flag > `SQLXL_CONFIG` env var > `~/.sqlxl/config.json` default. Override applies to both reads and writes. `--config` is pre-parsed at startup in `Program.cs` so it works as a global flag on any command without per-command plumbing. See `Config/ConfigLocator.cs`.
 - **Bulk update concurrency (lost update problem)** — current behavior is last-write-wins. User A and User B can both pull a template from the same state, User A submits first, then User B's submit silently clobbers A's changes. The standard SQL Server fix is optimistic concurrency via a `rowversion` column: export includes the rowversion, the `_UpdateFromStaging` sproc checks it on UPDATE, and rows where the version has changed since the template was pulled are returned as conflicts rather than silently overwritten. Realistic implementation path: `ScaffoldAn_UPDATE_Feature` detects a `rowversion` column on the domain table and wires in the conflict check automatically — tables without one get last-write-wins as today, with a warning on export. This requires schema changes to domain tables, staging tables, and the scaffolded update sproc. Not blocking for v1.0 since bulk updates in practice are usually coordinated, but worth addressing if SqlXL is used in high-concurrency environments.
 
 ---
 
-## Next steps to publish v1.1.0
+## Next steps to publish v1.2.0
 
-`sqlxl infer` is the headline addition for v1.1.0 (semver minor — new feature, no breaking changes). Before pushing to NuGet:
+v1.2.0 is ready to ship. All checklist items are complete:
 
-1. **Edge-case smoke tests** for paths the initial smoke tests didn't exercise:
-   - Single-sheet workbook (auto-pick, no `--sheet` required)
-   - `--mode strict` end-to-end against a file with a few invalid values
-   - `--date-format iso` rejecting `M/d/yyyy` dates
-   - All-null column → falls back to `NVARCHAR(255)` with the right warning
-   - Column wider than 4000 chars → triggers `NVARCHAR(MAX)`
+- ✅ Target framework upgraded to `net10.0`
+- ✅ `sqlxl init` idempotency fully fixed (constraint drop/re-add for `TableExists`, `SprocExists`, `ColumnExists`)
+- ✅ `PackageReleaseNotes` updated in `SqlXl.csproj` with prominent breaking-change notice
+- ✅ Version bumped to `1.2.0`
+- ✅ `smoke-test.ps1` passes 12/12 end-to-end
 
-2. **Pack + install-from-local + run.** `dotnet pack` produces the `.nupkg`; install it as a global tool from the local source and run `sqlxl infer` once. Catches any "works under `dotnet run` but breaks when installed" issue — particularly worth doing because `infer`'s code path is connectionless and exercises packaging differently from the data commands already battle-tested in v1.0.
-
-3. **Update `PackageReleaseNotes`** in `SqlXl.csproj` with the v1.1.0 changes (new `infer` command, connectionless schema bootstrap, next-steps stderr UX).
-
-4. **Version bump in `SqlXl.csproj`:** `1.0.1` → `1.1.0`.
-
-5. **Pack and publish:** `dotnet pack` then `dotnet nuget push bin/Release/SqlXl.1.1.0.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json`.
+**To publish:**
+```bash
+git push
+dotnet pack src/SqlXl/SqlXl.csproj -c Release
+dotnet nuget push src/SqlXl/bin/Release/SqlXl.1.2.0.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+```
 
 ---
 
@@ -435,5 +433,5 @@ Tables containing these types will not work correctly with the Excel import/expo
 
 ---
 
-*Last updated: 2026-04-26*
-*Status: All v1.0 blockers resolved. Ready to publish as v1.0 stable. `sqlxl infer` shipped post-v1.0.*
+*Last updated: 2026-05-01*
+*Status: v1.2.0 ready to publish. Upgraded to .NET 10, init idempotency fully resolved, smoke-test.ps1 added.*
