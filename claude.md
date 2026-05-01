@@ -72,7 +72,7 @@ sqlxl import --file products.xlsx --feature 3
 - System.CommandLine (CLI framework)
 - Dapper (SQL queries)
 - SqlBulkCopy (bulk inserts)
-- EPPlus 8.4.2 (Excel generation)
+- ClosedXML 0.102.2 (Excel generation)
 - Microsoft.Data.SqlClient (SQL Server connection)
 
 **No web stack!** No ASP.NET Core, no IIS, no Kestrel, no HTTP.
@@ -109,7 +109,7 @@ SqlXlRepo/
 - [x] Configured as dotnet tool (`<PackAsTool>true</PackAsTool>`)
 - [x] Copied Core business logic from SlappFramework
 - [x] Updated all namespaces (`SlappFramework` → `SqlXl.Core`, `SqlXl.Models`)
-- [x] Added all NuGet packages (EPPlus, Dapper, SqlClient, System.CommandLine, etc.)
+- [x] Added all NuGet packages (ClosedXML, Dapper, SqlClient, System.CommandLine, etc.)
 - [x] Removed test dependencies (NUnit), commented out Assert statements
 - [x] Created Models folder with BulkOpFeature and MenuItem
 - [x] Database connectivity verified (TestDatabase001, localhost)
@@ -167,11 +167,10 @@ SqlXlRepo/
 - Staging table validation pattern proven
 - No need to reinvent constraint-driven validation
 
-### EPPlus (not ClosedXML)
-- SlappFramework already uses EPPlus 8.4.2
-- Dark-themed Excel generation works perfectly
-- Users configure license (NonCommercial or Commercial)
-- Note: ClosedXML was considered but decided to stick with proven EPPlus code
+### ClosedXML (not EPPlus)
+- MIT licensed — no per-user license config required, no commercial restrictions
+- Replaced EPPlus before v1.0 publish; EPPlus licensing was incompatible with free NuGet distribution
+- All required capabilities (cell styling, data validation, sheet protection, dropdowns) available in ClosedXML
 
 ## How to Build/Run
 
@@ -244,24 +243,6 @@ dotnet tool uninstall --global SqlXl
 | `Commands/ExportCommand.cs` | CLI export command handler | ~95 | ⚠️ Build errors |
 | `Commands/ImportCommand.cs` | CLI import command handler | ~130 | ⚠️ Build errors |
 | `Program.cs` | Entry point, sets up System.CommandLine | ~12 | ⚠️ Build errors |
-
-## EPPlus License Configuration
-
-**IMPORTANT:** Users must configure EPPlus license before first use.
-
-Edit `ExcelTemplateGenerator.cs` and `ExcelImporter.cs` to uncomment ONE line:
-```csharp
-// For personal non-commercial use (free):
-ExcelPackage.License.SetNonCommercialPersonal("Your Name");
-
-// For non-commercial organization (free):
-ExcelPackage.License.SetNonCommercialOrganization("Organization Name");
-
-// For commercial use (requires paid license):
-ExcelPackage.License.SetCommercial("<Your License Key>");
-```
-
-See: https://epplussoftware.com
 
 ## Connection String Configuration
 

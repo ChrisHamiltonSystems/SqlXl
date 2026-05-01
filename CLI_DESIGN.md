@@ -366,13 +366,7 @@ VS Marketplace is not in scope — it targets Visual Studio extensions (VSIX), a
 
 SqlXL is **MIT licensed**. All dependencies must be MIT-compatible.
 
-**EPPlus is a pre-publish blocker.** EPPlus 8.x requires either a paid commercial license or a NonCommercial personal/org license. A freely distributed NuGet tool cannot ship with EPPlus without running into licensing ambiguity — particularly for the primary audience of large enterprise organizations.
-
-**Resolution: migrate from EPPlus to ClosedXML** before v1.0 is published. ClosedXML is MIT licensed with zero restrictions. The migration is fully contained to two files:
-- `Core/ExcelTemplateGenerator.cs`
-- `Core/ExcelImporter.cs`
-
-All required capabilities (cell styling, data validation, sheet protection, dropdowns) are available in ClosedXML. The API is different but the migration is mechanical.
+**Excel library: ClosedXML** (MIT licensed, zero restrictions). EPPlus was used initially but replaced before v1.0 — its commercial licensing terms were incompatible with free NuGet distribution.
 
 ---
 
