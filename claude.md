@@ -66,7 +66,7 @@ sqlxl import --file products.xlsx --feature 3
 **Distribution:** .NET Global Tool via NuGet
 
 **Backend:**
-- .NET 8.0 (console app)
+- .NET 10.0 (console app)
 - C# 12
 - SQL Server 2019+ (direct connection, no ORM)
 - System.CommandLine (CLI framework)

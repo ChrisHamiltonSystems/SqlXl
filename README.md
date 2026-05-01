@@ -37,7 +37,7 @@ Then you already know the problem.
 dotnet tool install --global SqlXl
 ```
 
-Requires .NET 8.0 or later. Windows only.
+Requires .NET 10.0 or later. Windows only.
 
 ## First-time setup
 
@@ -208,7 +208,7 @@ The override applies to both reads and writes — `sqlxl init --config /path/to/
 
 ## Requirements
 
-- .NET 8.0 or later
+- .NET 10.0 or later
 - SQL Server 2019 or later
 - Windows (DPAPI credential storage is Windows-only)
 

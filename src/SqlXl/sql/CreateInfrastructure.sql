@@ -222,7 +222,21 @@ BEGIN
     END
 
     RETURN @Result;
-END --end func 
+END --end func
+GO
+
+-- Drop check constraints that reference TableExists/SprocExists before altering those
+-- functions. SQL Server blocks CREATE OR ALTER on a function referenced by a check
+-- constraint on an existing table. Constraints are re-added after the functions below.
+IF OBJECT_ID('[SqlXl].[BulkOpFeatures]', 'U') IS NOT NULL
+BEGIN
+    IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'chk_TableExists')
+        ALTER TABLE [SqlXl].[BulkOpFeatures] DROP CONSTRAINT [chk_TableExists];
+    IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'chk_TableExists002')
+        ALTER TABLE [SqlXl].[BulkOpFeatures] DROP CONSTRAINT [chk_TableExists002];
+    IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'chk_SprocExists')
+        ALTER TABLE [SqlXl].[BulkOpFeatures] DROP CONSTRAINT [chk_SprocExists];
+END
 GO
 
 CREATE OR ALTER FUNCTION [SqlXl].TableExists 
@@ -279,7 +293,30 @@ BEGIN
 END; -- end func
 GO
 
-CREATE OR ALTER FUNCTION [SqlXl].ColumnExists 
+-- Re-add the check constraints dropped above (only needed when table already existed).
+IF OBJECT_ID('[SqlXl].[BulkOpFeatures]', 'U') IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'chk_TableExists')
+        ALTER TABLE [SqlXl].[BulkOpFeatures] ADD CONSTRAINT [chk_TableExists]
+            CHECK ([SqlXl].TableExists(DomainSchemaName, DomainTableName) = 1);
+    IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'chk_TableExists002')
+        ALTER TABLE [SqlXl].[BulkOpFeatures] ADD CONSTRAINT [chk_TableExists002]
+            CHECK ([SqlXl].TableExists(StagingSchemaName, StagingTableName) = 1);
+    IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'chk_SprocExists')
+        ALTER TABLE [SqlXl].[BulkOpFeatures] ADD CONSTRAINT [chk_SprocExists]
+            CHECK ([SqlXl].SprocExists(DomainSchemaName, SprocToProcessPerfectStagedData) = 1);
+END
+GO
+
+-- Drop check constraint that references ColumnExists before altering it.
+IF OBJECT_ID('[SqlXl].[Meta_Columns]', 'U') IS NOT NULL
+BEGIN
+    IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'chk_ColumnExists_Meta_Columns')
+        ALTER TABLE [SqlXl].[Meta_Columns] DROP CONSTRAINT [chk_ColumnExists_Meta_Columns];
+END
+GO
+
+CREATE OR ALTER FUNCTION [SqlXl].ColumnExists
 (
     @SchemaName NVARCHAR(128),
     @TableName NVARCHAR(128),
@@ -291,7 +328,7 @@ BEGIN
     DECLARE @result BIT = 0;
 
     -- Check if the column exists in the specified table and schema
-    IF EXISTS (SELECT 1 
+    IF EXISTS (SELECT 1
                FROM sys.columns c
                INNER JOIN sys.tables t ON c.object_id = t.object_id
                INNER JOIN sys.schemas s ON t.schema_id = s.schema_id
@@ -304,6 +341,15 @@ BEGIN
 
     RETURN @result;
 END; -- end func
+GO
+
+-- Re-add the check constraint dropped above.
+IF OBJECT_ID('[SqlXl].[Meta_Columns]', 'U') IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'chk_ColumnExists_Meta_Columns')
+        ALTER TABLE [SqlXl].[Meta_Columns] ADD CONSTRAINT [chk_ColumnExists_Meta_Columns]
+            CHECK ([SqlXl].ColumnExists(SchemaName, TableName, ColumnName) = 1);
+END
 GO
 
 CREATE OR ALTER FUNCTION [SqlXl].[GenerateCreateStagingTableSQLWith_NO_IdentityProperty]

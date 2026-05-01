@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
 
@@ -15,7 +15,7 @@
 
     <!-- NuGet package identity -->
     <PackageId>SqlXl</PackageId>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Authors>Chris Hamilton</Authors>
     <Copyright>Copyright (c) 2026 Chris Hamilton</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -28,7 +28,14 @@
     <PackageTags>sql;sqlserver;excel;bulk-import;bulk-export;dba;data-tools;cli;dotnet-tool</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReleaseNotes>1.1.0: Add --config flag and SQLXL_CONFIG env var for custom config file path. Add `sqlxl infer` command for Excel → SQL Server schema inference.</PackageReleaseNotes>
+    <PackageReleaseNotes>
+1.2.0 — REQUIRES .NET 10.0 OR LATER (breaking change from 1.1.0 which required .NET 8.0+)
+  - Upgraded target framework from net8.0 to net10.0
+  - Fixed `sqlxl init` idempotency: re-running init on an already-configured database no longer fails with a constraint error on TableExists, ColumnExists, or SprocExists functions
+  - Added end-to-end smoke test script (smoke-test.ps1) for ongoing regression validation
+
+1.1.0: Add --config flag and SQLXL_CONFIG env var for custom config file path. Add `sqlxl infer` command for Excel → SQL Server schema inference.
+    </PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -46,7 +53,8 @@
 
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.102.2" />
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.4" />
+    <PackageReference Include="System.IO.Packaging" Version="10.0.7" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.11" />
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
