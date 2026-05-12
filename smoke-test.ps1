@@ -202,6 +202,23 @@ Step "no flag          (wrong config → smoke profile NOT found)" {
     $code -ne 0 -or -not ($script:LastOutput -match "\bsmoke\b")
 }
 
+# ─── llm-context ─────────────────────────────────────────────────────────────
+
+Section "llm-context"
+
+Step "llm-context --format json  (valid JSON, correct version)" {
+    $code = Invoke-SqlXl @("llm-context", "--format", "json")
+    if ($code -ne 0) { return $false }
+    try {
+        $obj = $script:LastOutput | ConvertFrom-Json
+        $obj.format_version -eq 1 -and $obj.sqlxl_version -match '^\d+\.\d+\.\d+$'
+    } catch { $false }
+}
+
+Step "llm-context           (text format, no error)" {
+    (Invoke-SqlXl @("llm-context")) -eq 0
+}
+
 # ─── Summary ─────────────────────────────────────────────────────────────────
 
 $Total = $script:Pass + $script:Fail

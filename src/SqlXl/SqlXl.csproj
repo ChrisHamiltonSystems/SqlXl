@@ -15,7 +15,7 @@
 
     <!-- NuGet package identity -->
     <PackageId>SqlXl</PackageId>
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
     <Authors>Chris Hamilton</Authors>
     <Copyright>Copyright (c) 2026 Chris Hamilton</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -29,6 +29,8 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReleaseNotes>
+1.3.0 — Add `sqlxl llm-context` command: emits a versioned, machine-readable reference document (text or JSON) for AI agents and tooling. Pass --include-state to append live DB state.
+
 1.2.0 — REQUIRES .NET 10.0 OR LATER (breaking change from 1.1.0 which required .NET 8.0+)
   - Upgraded target framework from net8.0 to net10.0
   - Fixed `sqlxl init` idempotency: re-running init on an already-configured database no longer fails with a constraint error on TableExists, ColumnExists, or SprocExists functions

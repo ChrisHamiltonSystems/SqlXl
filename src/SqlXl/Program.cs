@@ -46,6 +46,8 @@ app.Configure(config =>
         .WithDescription("Read an Excel file and emit a CREATE TABLE statement inferred from the data");
     config.AddCommand<DemoCommand>("demo")
         .WithDescription("Create the SqlXlDemo database with sample data (drops and recreates)");
+    config.AddCommand<LlmContextCommand>("llm-context")
+        .WithDescription("Emit a versioned, machine-readable reference document for the installed sqlxl binary");
 });
 
 return app.Run(cleanedArgs);

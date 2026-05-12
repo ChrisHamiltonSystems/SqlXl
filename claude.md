@@ -41,6 +41,7 @@ dotnet tool install --global SqlXl
 | `sqlxl export --query "SELECT ..."` | Export query results to Excel (read-only) |
 | `sqlxl test --table dbo.T` | Auto-generate test rows and validate them against all configured features |
 | `sqlxl infer products.xlsx` | Infer SQL Server `CREATE TABLE` DDL from an Excel file (no DB connection needed) |
+| `sqlxl llm-context [--format json] [--include-state]` | Emit a versioned, machine-readable reference doc for AI agents |
 
 ### Global flag
 `--config <path>` or `SQLXL_CONFIG` env var — override the default config file location (`~/.sqlxl/config.json`). Useful for CI/CD or side-by-side profile sets.
@@ -105,16 +106,20 @@ SqlXlRepo/
 └── .gitignore
 ```
 
-## Current Status (as of 2026-05-01)
+## Current Status (as of 2026-05-12)
 
-**Version: 1.2.0 — published to NuGet**
+**Version: 1.3.0 — built, not yet published to NuGet**
 
 All commands build and work. The tool is production-ready.
 
-### Recently shipped (v1.2.0)
+### Recently shipped (v1.3.0)
+- Added `sqlxl llm-context` command: emits a versioned, machine-readable reference document (text or JSON). Pass `--format json` for structured AI agent consumption; `--include-state` to append live DB state (active profile, configured features, domain tables).
+- Added `SKILL.md` in `ToDo_LLM-Context_Subcommand/` — a Claude Code skill definition that activates on `sqlxl` mentions and bootstraps from `llm-context --format json`
+
+### Previously shipped (v1.2.0)
 - Upgraded from .NET 8 to .NET 10 (breaking change — requires .NET 10 runtime)
 - Fixed `sqlxl init` idempotency: re-running init on an already-configured database now works correctly in all cases (constraint drop/re-add for `TableExists`, `SprocExists`, `ColumnExists` functions)
-- Added `smoke-test.ps1` — 12-step end-to-end regression script
+- Added `smoke-test.ps1` — end-to-end regression script (now 14 steps)
 
 ### Known limitations
 - **`sqlxl test` unique constraint collision** — test data uses fixed sample values; collides with existing data on unique columns. Workaround: `sqlxl demo --yes` to reset. Fix: append GUID/timestamp to sample string values.
@@ -218,6 +223,6 @@ dotnet nuget push bin/Release/SqlXl.1.2.0.nupkg --api-key $NUGET_API_KEY --sourc
 
 ---
 
-**Last Updated:** 2026-05-01
-**Version:** 1.2.0 (published to NuGet)
-**Status:** Production-ready. All commands working. Smoke tests passing 12/12.
+**Last Updated:** 2026-05-12
+**Version:** 1.3.0 (built, not yet published)
+**Status:** Production-ready. All commands working. Smoke tests passing 14/14.
