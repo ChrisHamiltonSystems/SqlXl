@@ -181,6 +181,33 @@ Command: `import`
 
 ---
 
+## Agent Context — `sqlxl llm-context`
+
+Emits a versioned, machine-readable reference document for the installed binary. Designed so an AI agent (or any LLM) can become fluent in SqlXL from a single command — no external lookups, no separate docs fetch.
+
+```bash
+# Markdown (human-readable default)
+sqlxl llm-context
+
+# JSON (machine-readable, schema-validated)
+sqlxl llm-context --format json
+
+# JSON + live DB state (active profile, configured features, domain tables)
+sqlxl llm-context --format json --include-state
+```
+
+**Output contract:** `--format json` conforms to `format_version: 1`. Top-level keys: `format_version`, `sqlxl_version`, `generated_at`, `commands`, `template_structure`, `bulk_op_feature_schema`, `agent_best_practices`, `workflows`, `gotchas`, `builtin_schema`, and optionally `active_state`. Breaking changes (removed/renamed fields) bump `format_version`; additive changes do not.
+
+**No DB connection required** unless `--include-state` is passed.
+
+**Key design decisions:**
+- Static content (commands, flags, schema) is embedded as a JSON template inside the binary — always in sync with the shipped binary, no external doc fetch.
+- Dynamic fields (`generated_at`, `sqlxl_version`, `docs_url`, `connection_model.profile_storage_path`) are substituted at runtime.
+- `--include-state` queries `SqlXl.BulkOpFeatures` and `INFORMATION_SCHEMA.TABLES` via Dapper and appends the result as `active_state` — gives the agent a live picture of what features and tables are configured.
+- The companion `SKILL.md` (in `ToDo_LLM-Context_Subcommand/`) defines a Claude Code skill that auto-activates on `sqlxl` mentions and bootstraps from `llm-context --format json`.
+
+---
+
 ## Schema Bootstrapping — `sqlxl infer`
 
 A pre-Tier-1 helper. Given an Excel file with no destination table yet, infer
@@ -402,21 +429,20 @@ SqlXL is **MIT licensed**. All dependencies must be MIT-compatible.
 
 ---
 
-## Next steps to publish v1.2.0
+## Next steps to publish v1.3.0
 
-v1.2.0 is ready to ship. All checklist items are complete:
+v1.3.0 is ready to ship. All checklist items are complete:
 
-- ✅ Target framework upgraded to `net10.0`
-- ✅ `sqlxl init` idempotency fully fixed (constraint drop/re-add for `TableExists`, `SprocExists`, `ColumnExists`)
-- ✅ `PackageReleaseNotes` updated in `SqlXl.csproj` with prominent breaking-change notice
-- ✅ Version bumped to `1.2.0`
-- ✅ `smoke-test.ps1` passes 12/12 end-to-end
+- ✅ `sqlxl llm-context` command implemented (`Commands/LlmContextCommand.cs`)
+- ✅ README updated with `llm-context` section
+- ✅ `PackageReleaseNotes` updated in `SqlXl.csproj`
+- ✅ Version bumped to `1.3.0`
+- ✅ `smoke-test.ps1` passes 14/14 end-to-end
+- ✅ `dotnet pack -c Release` — package at `bin/Release/SqlXl.1.3.0.nupkg`
 
 **To publish:**
 ```bash
-git push
-dotnet pack src/SqlXl/SqlXl.csproj -c Release
-dotnet nuget push src/SqlXl/bin/Release/SqlXl.1.2.0.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+dotnet nuget push src/SqlXl/bin/Release/SqlXl.1.3.0.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
 ```
 
 ---
@@ -433,5 +459,5 @@ Tables containing these types will not work correctly with the Excel import/expo
 
 ---
 
-*Last updated: 2026-05-01*
-*Status: v1.2.0 ready to publish. Upgraded to .NET 10, init idempotency fully resolved, smoke-test.ps1 added.*
+*Last updated: 2026-05-12*
+*Status: v1.3.0 ready to publish. Added `sqlxl llm-context` command.*

@@ -143,6 +143,23 @@ Creates (or resets) a self-contained demo database with sample tables and data. 
 sqlxl demo --connection "Server=localhost;Integrated Security=true;TrustServerCertificate=true;"
 ```
 
+### `sqlxl llm-context` — machine-readable reference for AI agents
+
+Emits a complete, versioned reference document for the installed binary — commands, flags, workflows, gotchas, and the BulkOpFeature schema — so an AI assistant can operate SqlXL fluently without external lookups.
+
+```bash
+# Text (markdown) — human-readable
+sqlxl llm-context
+
+# JSON — structured, schema-validated, agent-friendly
+sqlxl llm-context --format json
+
+# Include live DB state: active profile, configured features, domain tables
+sqlxl llm-context --format json --include-state
+```
+
+Pass the JSON output to your AI assistant at the start of a session. No DB connection required unless `--include-state` is used.
+
 ## How validation works
 
 Data is bulk-copied to a staging table. SQL Server constraints on that table are the validators. If any row fails a constraint, the entire batch is rolled back and row-level error messages are returned to the terminal. No partial imports.
